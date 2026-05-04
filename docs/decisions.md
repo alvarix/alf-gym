@@ -2,6 +2,33 @@
 
 ADR-lite. Each entry: date, decision, context, alternatives considered, consequences.
 
+## 2026-04-30 r3.4: En vs syn modes reshape the form, not just the display
+
+**Decision:** En mode and syn mode show different forms. En mode = discrete fields, no syntax tokens visible (load is split into kind + value). Syn mode = single mono token input covering load, reps, hold, sets, side, notable.
+
+**Context:** User feedback: "syntax/en switcher should change whole UI - in syntax view we don't have split out fields for side, sets, reps, hold, load - that all goes into one mono-input. there should be no syntax in en view unless specifically requestable."
+
+**Consequences:**
+- Saving from syn mode runs a best-effort parser. If the token is ambiguous, the load string still saves and the user can switch to en to fix.
+- En mode's load field expands into a `load type` selector (lb, plate per side, cable, band, bodyweight) plus a `load value`. Storage stays the same (composed back to a string on save).
+- Notable becomes a visual `notable` pill in en mode and a `!` in syn mode. Form label drops the parenthetical syntax hint.
+
+## 2026-04-30 r3.4: Click exercise row title to toggle the editor
+
+**Decision:** Tapping an exercise row's title opens the inline editor; tapping again closes it. The action buttons on the right (`↑ ↓ ×`) don't trigger the toggle.
+
+**Context:** User feedback: "close editing popout (click title bar to toggle, not just open)".
+
+**Consequences:** "edit" button removed (redundant). The interaction is more touch-friendly because the whole title area is the affordance.
+
+## 2026-04-30 r3.4: Optional block flag
+
+**Decision:** Blocks can be flagged optional via a `★` button or in the add-block form. Optional blocks render with reduced visual weight and an "optional" pill.
+
+**Context:** Real workouts have optional blocks (e.g. Day C "optional but recommended", Plyo as a finisher). Marking them optional carries through to the session view (deferred) so the user can skip them without guilt.
+
+**Consequences:** New `optional` boolean on Block. No schema bump (Dexie doesn't index this field). Skeleton blocks default to required.
+
 ## 2026-04-30 r3.3: Flatten Program + Variant into Workout
 
 **Decision:** Eliminate Program and Variant as separate entities. Replace with a single `Workout` entity carrying `parentId` for lineage.

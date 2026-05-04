@@ -2,6 +2,23 @@
 
 All notable changes to alf-gym are recorded here. Newest entries on top.
 
+## 2026-04-30 r3.4 (en/syn split, notable as tag, toggle close, optional)
+
+### Changed
+- **Syntax / english mode now reshape the form, not just the display.** En mode shows discrete fields with no syntax tokens visible. Syn mode collapses to a single mono token field that covers load, reps, hold, sets, side, notable. Storage stays the same.
+- **Notable** rendered as a visual `notable` pill in en mode. `!` only appears in syn mode. Form label dropped the "(renders !)" parenthetical.
+- **Click an exercise row's title to toggle the inline editor** open or closed. Edit button removed (the row IS the toggle). Action buttons (`↑ ↓ ×`) stay on the right and don't trigger toggle.
+- **Optional block flag** added. Toggle via `★` button on the block row. Optional draft option in the add-block form. Renders with reduced visual weight and an "optional" pill.
+
+### Added
+- En mode load: structured into `load type` (lb / plate per side / cable / band / bodyweight) + `load value`. No more `^15`, `(35)`, `band` tokens visible in en mode.
+- Syntax-mode parser: best-effort token -> structured fields on save. Fields stay correct so en mode still shows clean values.
+
+### Deferred to next phase
+- **Drop-in blocks** (PT-style sets pulled into a session ad hoc): belongs with sessions, will land there.
+- **Pain log alongside last week's records**: belongs with sessions and per-exercise history.
+- **Wishlist** (single exercises queued up, exposed when designing a new day): real value, but better as part of the session-design loop.
+
 ## 2026-04-30 r3.3 (model flattening)
 
 ### Changed

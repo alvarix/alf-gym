@@ -20,6 +20,7 @@
     .ix-card.alt { background: var(--surface-2); }
     .ix-card.editing { border-color: var(--text); }
     .ix-card.draft { border-style: dashed; background: var(--surface-2); }
+    .ix-card.optional-block { background: var(--surface-2); opacity: 0.85; }
     .ix-card .title { font-weight: 500; font-size: 14px; }
     .ix-card .meta { font-size: 12px; color: var(--text-2); margin-top: 2px; }
     .ix-card .actions { display: flex; gap: 4px; flex-shrink: 0; }
@@ -43,7 +44,11 @@
     .pill-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-family: var(--mono); }
     .pill-tag.archived { background: var(--surface-2); color: var(--text-3); }
     .pill-tag.lineage { background: var(--surface-2); color: var(--text-2); }
+    .pill-tag.notable { background: #fff5d6; color: #856100; font-family: var(--sans); }
+    .pill-tag.optional { background: var(--surface-2); color: var(--text-2); font-family: var(--sans); font-style: italic; }
     .archived-row { opacity: 0.6; }
+    .row-toggleable { cursor: pointer; }
+    .row-toggleable:hover .title { color: var(--accent); }
   </style>
 </head>
 <body>
@@ -55,9 +60,7 @@
       <div class="title">alf-gym &middot; Workout Builder</div>
       <div class="crumbs">
         <a @click="gotoHash('#/')">Workouts</a>
-        <template x-if="view === 'wizard'">
-          <span><span class="sep">›</span><span>new workout</span></span>
-        </template>
+        <template x-if="view === 'wizard'"><span><span class="sep">›</span><span>new workout</span></span></template>
         <template x-if="view === 'workout' || view === 'day' || view === 'block'">
           <span><span class="sep">›</span><a @click="gotoHash('#/w/' + activeWorkoutId)" x-text="activeWorkout() ? activeWorkout().name : '?'"></a></span>
         </template>
@@ -93,10 +96,7 @@
 
   <!-- Next step strip -->
   <template x-if="nextStepHint() && view !== 'wizard'">
-    <div class="next-step">
-      <span class="arrow">→</span>
-      <span x-text="nextStepHint().text"></span>
-    </div>
+    <div class="next-step"><span class="arrow">→</span><span x-text="nextStepHint().text"></span></div>
   </template>
 
   <!-- Workouts list -->
@@ -119,29 +119,17 @@
           <div @click="gotoHash('#/w/' + w.id)" style="cursor: pointer; flex: 1; min-width: 0;">
             <div class="title">
               <span x-text="w.name"></span>
-              <template x-if="w.status === 'archived'">
-                <span class="pill-tag archived">archived</span>
-              </template>
-              <template x-if="w.isCurrent">
-                <span class="pill-tag" style="background: var(--accent-bg); color: var(--accent);">current</span>
-              </template>
+              <template x-if="w.status === 'archived'"><span class="pill-tag archived">archived</span></template>
+              <template x-if="w.isCurrent"><span class="pill-tag" style="background: var(--accent-bg); color: var(--accent);">current</span></template>
             </div>
             <div class="meta">
-              <template x-if="w.parentId">
-                <span class="pill-tag lineage">from <span x-text="workoutName(w.parentId)"></span></span>
-              </template>
-              <template x-if="!w.parentId">
-                <span class="dim">root</span>
-              </template>
+              <template x-if="w.parentId"><span class="pill-tag lineage">from <span x-text="workoutName(w.parentId)"></span></span></template>
+              <template x-if="!w.parentId"><span class="dim">root</span></template>
             </div>
           </div>
           <div class="actions">
-            <template x-if="w.status === 'archived'">
-              <button @click="unarchiveWorkout(w)" title="restore">↺</button>
-            </template>
-            <template x-if="w.status !== 'archived'">
-              <button @click="archiveWorkout(w)" title="archive">⌽</button>
-            </template>
+            <template x-if="w.status === 'archived'"><button @click="unarchiveWorkout(w)" title="restore">↺</button></template>
+            <template x-if="w.status !== 'archived'"><button @click="archiveWorkout(w)" title="archive">⌽</button></template>
             <button @click="gotoHash('#/w/' + w.id)">open</button>
           </div>
         </div>
@@ -157,7 +145,7 @@
     </div>
 
     <div class="wizard-text">
-      <strong>Where you are:</strong> all your workouts. Each workout (e.g. <span class="mono">Workout 9.2</span>) is one designed program. Revisions are sibling workouts linked by lineage: tap a workout to open its days, or fork a workout to start a new revision.
+      <strong>Where you are:</strong> all your workouts. Each workout is one designed program. Revisions are sibling workouts linked by lineage.
       <ol>
         <li>Tap <strong>+ new workout</strong> to start the wizard.</li>
         <li>Tap an existing workout to open its days.</li>
@@ -186,7 +174,7 @@
               </template>
             </select>
           </div>
-          <div class="muted" style="font-size: 12px;">Pick a parent if this is a revision (e.g. 9.3 forking from 9.2). Days and blocks won't auto-copy from the parent here; this is a fresh workout. Use "fork" on the parent's view to copy contents.</div>
+          <div class="muted" style="font-size: 12px;">Pick a parent if this is a revision (e.g. 9.3 forking from 9.2). Days won't auto-copy here; use the <strong>fork</strong> button on the parent to copy contents.</div>
           <div class="row" style="gap: 8px; margin-top: 12px;">
             <button class="grow" @click="cancelWizard()">cancel</button>
             <button class="grow primary" @click="wizard.step = 2">next</button>
@@ -225,10 +213,6 @@
         </div>
       </div>
     </template>
-
-    <div class="wizard-text">
-      <strong>What this creates:</strong> one Workout, the Days you ticked, and (with skeleton on) blocks named after movement patterns. Blocks start empty so you can add exercises into them next.
-    </div>
   </div>
 
   <!-- Workout view (Days list) -->
@@ -284,48 +268,28 @@
       <div class="inline-form-head">Add day</div>
       <template x-if="draftDay">
         <div>
-          <div class="form-row">
-            <label>group</label>
+          <div class="form-row"><label>group</label>
             <select x-model="draftDay.groupKey">
-              <option value="A">A</option>
-              <option value="B">B</option>
-              <option value="C">C</option>
-              <option value="D">D</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <label>name</label>
-            <input x-model="draftDay.name" :placeholder="'Day ' + draftDay.groupKey + (draftDay.isAlt ? ' alt' : ' - Front/Back/...')" />
-          </div>
-          <div class="form-row">
-            <label>alt?</label>
+              <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+            </select></div>
+          <div class="form-row"><label>name</label>
+            <input x-model="draftDay.name" :placeholder="'Day ' + draftDay.groupKey + (draftDay.isAlt ? ' alt' : ' - Front/Back/...')" /></div>
+          <div class="form-row"><label>alt?</label>
             <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
               <input type="checkbox" x-model="draftDay.isAlt" style="width: auto; height: auto; margin: 0;" />
               this is an alt (e.g. home version)
-            </label>
-          </div>
-          <div class="form-row">
-            <label>skeleton</label>
+            </label></div>
+          <div class="form-row"><label>skeleton</label>
             <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
               <input type="checkbox" x-model="draftDay.useSkeleton" :disabled="draftDay.isAlt" style="width: auto; height: auto; margin: 0;" />
               pre-fill blocks (only for non-alt days)
-            </label>
-          </div>
+            </label></div>
           <div class="row" style="gap: 8px; margin-top: 8px;">
             <button class="grow" @click="cancelDraftDay()">cancel</button>
             <button class="grow primary" @click="saveDraftDay()">add day</button>
           </div>
         </div>
       </template>
-    </div>
-
-    <div class="wizard-text">
-      <strong>Where you are:</strong> the days inside this workout. Each Day groups blocks. Alts (Day A alt - home) are siblings under the same letter.
-      <ol>
-        <li>Tap a Day to open its blocks.</li>
-        <li>Empty Days say <span class="dim">empty &middot; tap to design</span>. Use them to practice.</li>
-        <li>Tap <strong>fork</strong> to copy this whole workout into a new revision (e.g. 9.2 -> 9.3).</li>
-      </ol>
     </div>
   </div>
 
@@ -344,7 +308,7 @@
     </template>
 
     <template x-for="(b, i) in blocks" :key="b.id">
-      <div class="ix-card">
+      <div class="ix-card" :class="b.optional ? 'optional-block' : ''">
         <div class="row spread">
           <div @click="gotoHash('#/w/' + activeWorkoutId + '/d/' + activeDayId + '/b/' + b.id)" style="cursor: pointer; flex: 1; min-width: 0;">
             <div class="title">
@@ -352,22 +316,20 @@
               <span x-text="b.name"></span>
               <span class="pill" :class="b.type === 'circuit' ? 'accent' : ''" style="font-size: 10px; margin-left: 6px;">
                 <span x-text="b.type"></span>
-                <template x-if="b.type === 'circuit'">
-                  <span> &middot; <span x-text="b.rounds"></span> rounds</span>
-                </template>
+                <template x-if="b.type === 'circuit'"><span> &middot; <span x-text="b.rounds"></span> rounds</span></template>
               </span>
+              <template x-if="b.optional"><span class="pill-tag optional">optional</span></template>
             </div>
             <div class="meta">
               <span x-text="(b._exCount || 0) + ' exercise' + (b._exCount === 1 ? '' : 's')"></span>
-              <template x-if="b.type === 'circuit'">
-                <span> &middot; rest <span x-text="b.restBetweenRoundsSec"></span>s</span>
-              </template>
+              <template x-if="b.type === 'circuit'"><span> &middot; rest <span x-text="b.restBetweenRoundsSec"></span>s</span></template>
             </div>
           </div>
           <div class="actions">
             <button @click="moveBlock(b, -1)">↑</button>
             <button @click="moveBlock(b, 1)">↓</button>
             <button @click="toggleBlockType(b)" title="toggle linear/circuit">⇄</button>
+            <button @click="toggleBlockOptional(b)" :title="b.optional ? 'mark required' : 'mark optional'">★</button>
             <button @click="deleteBlock(b)">×</button>
           </div>
         </div>
@@ -379,26 +341,23 @@
       <div class="inline-form-head">Add block</div>
       <template x-if="draftBlock">
         <div>
-          <div class="form-row">
-            <label>name</label>
-            <input x-model="draftBlock.name" placeholder="Warmup, Squat, Pull, ..." />
-          </div>
-          <div class="form-row">
-            <label>type</label>
+          <div class="form-row"><label>name</label>
+            <input x-model="draftBlock.name" placeholder="Warmup, Squat, Pull, ..." /></div>
+          <div class="form-row"><label>type</label>
             <select x-model="draftBlock.type">
               <option value="linear">linear</option>
               <option value="circuit">circuit</option>
-            </select>
-          </div>
+            </select></div>
+          <div class="form-row"><label>optional?</label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+              <input type="checkbox" x-model="draftBlock.optional" style="width: auto; height: auto; margin: 0;" />
+              this block is optional today
+            </label></div>
           <div x-show="draftBlock.type === 'circuit'">
-            <div class="form-row">
-              <label>rounds</label>
-              <input type="number" x-model.number="draftBlock.rounds" min="1" />
-            </div>
-            <div class="form-row">
-              <label>rest (sec)</label>
-              <input type="number" x-model.number="draftBlock.restBetweenRoundsSec" min="0" />
-            </div>
+            <div class="form-row"><label>rounds</label>
+              <input type="number" x-model.number="draftBlock.rounds" min="1" /></div>
+            <div class="form-row"><label>rest (sec)</label>
+              <input type="number" x-model.number="draftBlock.restBetweenRoundsSec" min="0" /></div>
           </div>
           <div class="row" style="gap: 8px; margin-top: 8px;">
             <button class="grow" @click="cancelDraftBlock()">cancel</button>
@@ -409,12 +368,7 @@
     </div>
 
     <div class="wizard-text">
-      <strong>Where you are:</strong> blocks of one Day. Each block runs as <span class="kbd">linear</span> or <span class="kbd">circuit</span>.
-      <ol>
-        <li>Tap a block to add or edit exercises.</li>
-        <li>Use <span class="kbd">⇄</span> to flip linear ↔ circuit.</li>
-        <li>Reorder with <span class="kbd">↑</span> <span class="kbd">↓</span>.</li>
-      </ol>
+      <strong>Where you are:</strong> blocks of one Day. <span class="kbd">⇄</span> flips linear / circuit. <span class="kbd">★</span> marks optional. Reorder with <span class="kbd">↑</span> <span class="kbd">↓</span>.
     </div>
   </div>
 
@@ -425,12 +379,9 @@
       <button class="new-btn" @click="openAddExercise()" x-show="!editing">+ exercise</button>
     </div>
     <p class="muted" style="font-size: 12px;">
-      <template x-if="activeBlock() && activeBlock().type === 'circuit'">
-        <span>circuit &middot; <span x-text="activeBlock().rounds"></span> rounds &middot; <span x-text="activeBlock().restBetweenRoundsSec"></span>s rest between</span>
-      </template>
-      <template x-if="activeBlock() && activeBlock().type === 'linear'">
-        <span>linear block</span>
-      </template>
+      <template x-if="activeBlock() && activeBlock().type === 'circuit'"><span>circuit &middot; <span x-text="activeBlock().rounds"></span> rounds &middot; <span x-text="activeBlock().restBetweenRoundsSec"></span>s rest between</span></template>
+      <template x-if="activeBlock() && activeBlock().type === 'linear'"><span>linear block</span></template>
+      <template x-if="activeBlock() && activeBlock().optional"><span> &middot; optional</span></template>
     </p>
 
     <template x-if="prescriptions.length === 0 && !(editing && !editing.id)">
@@ -442,53 +393,73 @@
 
     <template x-for="(p, i) in prescriptions" :key="p.id">
       <div class="ix-card" :class="editing && editing.id === p.id ? 'editing' : ''">
-        <div class="row spread" x-show="!(editing && editing.id === p.id)">
+        <!-- Display row: clickable to toggle edit -->
+        <div class="row spread row-toggleable" @click="toggleEditExercise(p)">
           <div style="flex: 1; min-width: 0;">
             <div class="title">
               <span class="mono dim" x-text="(blocks.findIndex(b => b.id === activeBlockId) + 1) + '.' + (i+1)"></span>
               <span x-text="exerciseName(p.exerciseId)"></span>
+              <template x-if="p.notable && !syntax"><span class="pill-tag notable">notable</span></template>
             </div>
             <div class="meta mono" x-text="formatPrescription(p)"></div>
             <div class="meta" x-show="p.notes" x-text="p.notes" style="margin-top: 4px; font-style: italic;"></div>
           </div>
-          <div class="actions">
+          <div class="actions" @click.stop>
             <button @click="moveExercise(p, -1)">↑</button>
             <button @click="moveExercise(p, 1)">↓</button>
-            <button @click="editExercise(p)">edit</button>
             <button @click="deleteExercise(p)">×</button>
           </div>
         </div>
+
+        <!-- Inline edit form -->
         <div x-show="editing && editing.id === p.id" class="inline-form">
           <div class="inline-form-head">Edit exercise</div>
           <template x-if="editing && editing.id === p.id">
-            <div x-data>
-              <div class="form-row">
-                <label>exercise</label>
+            <div>
+              <div class="form-row"><label>exercise</label>
                 <div>
                   <input list="exercise-list" x-model="editing.exerciseQuery" placeholder="type to search or add..." />
-                  <div class="muted" style="font-size: 11px;">unmatched names create a new exercise.</div>
                 </div>
               </div>
-              <div class="form-row">
-                <label>side</label>
-                <select x-model="editing.fields.sideScheme">
-                  <option value="bilateral">bilateral</option>
-                  <option value="unilateral-L-first">unilateral, left first</option>
-                  <option value="unilateral-R-first">unilateral, right first</option>
-                  <option value="alternating">alternating</option>
-                </select>
+
+              <!-- En-mode discrete fields -->
+              <div x-show="!syntax">
+                <div class="form-row"><label>side</label>
+                  <select x-model="editing.fields.sideScheme">
+                    <option value="bilateral">bilateral</option>
+                    <option value="unilateral-L-first">unilateral, left first</option>
+                    <option value="unilateral-R-first">unilateral, right first</option>
+                    <option value="alternating">alternating</option>
+                  </select></div>
+                <div class="form-row"><label>sets</label><input type="number" x-model.number="editing.fields.sets" min="1" /></div>
+                <div class="form-row"><label>reps</label><input x-model="editing.fields.reps" placeholder="8 or 8,10,12 or blank" /></div>
+                <div class="form-row"><label>hold (sec)</label><input type="number" x-model.number="editing.fields.holdSec" placeholder="optional" /></div>
+                <div class="form-row"><label>load type</label>
+                  <select x-model="editing.fields.loadKind">
+                    <option value="lb">lb (bar / DB)</option>
+                    <option value="plate">plate per side (lb)</option>
+                    <option value="cable">cable level</option>
+                    <option value="band">band</option>
+                    <option value="bodyweight">bodyweight</option>
+                  </select></div>
+                <div class="form-row" x-show="loadKindNeedsValue(editing.fields.loadKind)">
+                  <label>load value</label>
+                  <input x-model="editing.fields.loadValue" placeholder="50 or 50,55,60" />
+                </div>
+                <div class="form-row"><label>notable</label>
+                  <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                    <input type="checkbox" x-model="editing.fields.notable" style="width: auto; height: auto; margin: 0;" />
+                    first time at this load
+                  </label></div>
               </div>
-              <div class="form-row"><label>sets</label><input type="number" x-model.number="editing.fields.sets" min="1" /></div>
-              <div class="form-row"><label>reps</label><input x-model="editing.fields.reps" placeholder="8 or 8,10,12 or blank" /></div>
-              <div class="form-row"><label>hold (sec)</label><input type="number" x-model.number="editing.fields.holdSec" placeholder="optional" /></div>
-              <div class="form-row"><label>load (lb)</label><input x-model="editing.fields.load" placeholder="50 · 50,55,60 · ^15 · (35) · band" /></div>
-              <div class="form-row">
-                <label>notable</label>
-                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
-                  <input type="checkbox" x-model="editing.fields.notable" style="width: auto; height: auto; margin: 0;" />
-                  first time at this load (renders <span class="mono">!</span>)
-                </label>
+
+              <!-- Syntax-mode single token input -->
+              <div x-show="syntax">
+                <div class="form-row"><label>token</label>
+                  <input class="mono" x-model="editing.token" placeholder="50!;8-3" /></div>
+                <div class="muted" style="font-size: 11px; margin-bottom: 6px;">covers load, reps, hold, sets, side, notable in one string. examples: <span class="mono">50!;8-3</span>, <span class="mono">^15;10-2</span>, <span class="mono">30s;-3</span>.</div>
               </div>
+
               <div class="form-row"><label>notes</label><input x-model="editing.fields.notes" placeholder="optional" /></div>
               <div class="row" style="gap: 8px; margin-top: 8px;">
                 <button class="grow" @click="cancelEdit()">cancel</button>
@@ -500,37 +471,50 @@
       </div>
     </template>
 
+    <!-- Inline draft for new exercise -->
     <div x-show="editing && !editing.id" class="ix-card draft">
       <div class="inline-form-head">Add exercise</div>
       <template x-if="editing && !editing.id">
         <div>
-          <div class="form-row">
-            <label>exercise</label>
-            <div>
-              <input list="exercise-list" x-model="editing.exerciseQuery" placeholder="type to search or add..." autofocus />
-              <div class="muted" style="font-size: 11px;">unmatched names create a new exercise.</div>
+          <div class="form-row"><label>exercise</label>
+            <div><input list="exercise-list" x-model="editing.exerciseQuery" placeholder="type to search or add..." autofocus /></div></div>
+
+          <div x-show="!syntax">
+            <div class="form-row"><label>side</label>
+              <select x-model="editing.fields.sideScheme">
+                <option value="bilateral">bilateral</option>
+                <option value="unilateral-L-first">unilateral, left first</option>
+                <option value="unilateral-R-first">unilateral, right first</option>
+                <option value="alternating">alternating</option>
+              </select></div>
+            <div class="form-row"><label>sets</label><input type="number" x-model.number="editing.fields.sets" min="1" /></div>
+            <div class="form-row"><label>reps</label><input x-model="editing.fields.reps" placeholder="8 or 8,10,12" /></div>
+            <div class="form-row"><label>hold (sec)</label><input type="number" x-model.number="editing.fields.holdSec" placeholder="optional" /></div>
+            <div class="form-row"><label>load type</label>
+              <select x-model="editing.fields.loadKind">
+                <option value="lb">lb (bar / DB)</option>
+                <option value="plate">plate per side (lb)</option>
+                <option value="cable">cable level</option>
+                <option value="band">band</option>
+                <option value="bodyweight">bodyweight</option>
+              </select></div>
+            <div class="form-row" x-show="loadKindNeedsValue(editing.fields.loadKind)">
+              <label>load value</label>
+              <input x-model="editing.fields.loadValue" placeholder="50 or 50,55,60" />
             </div>
+            <div class="form-row"><label>notable</label>
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                <input type="checkbox" x-model="editing.fields.notable" style="width: auto; height: auto; margin: 0;" />
+                first time at this load
+              </label></div>
           </div>
-          <div class="form-row">
-            <label>side</label>
-            <select x-model="editing.fields.sideScheme">
-              <option value="bilateral">bilateral</option>
-              <option value="unilateral-L-first">unilateral, left first</option>
-              <option value="unilateral-R-first">unilateral, right first</option>
-              <option value="alternating">alternating</option>
-            </select>
+
+          <div x-show="syntax">
+            <div class="form-row"><label>token</label>
+              <input class="mono" x-model="editing.token" placeholder="50!;8-3" autofocus /></div>
+            <div class="muted" style="font-size: 11px; margin-bottom: 6px;">covers load, reps, hold, sets, side, notable in one string.</div>
           </div>
-          <div class="form-row"><label>sets</label><input type="number" x-model.number="editing.fields.sets" min="1" /></div>
-          <div class="form-row"><label>reps</label><input x-model="editing.fields.reps" placeholder="8 or 8,10,12" /></div>
-          <div class="form-row"><label>hold (sec)</label><input type="number" x-model.number="editing.fields.holdSec" placeholder="optional" /></div>
-          <div class="form-row"><label>load (lb)</label><input x-model="editing.fields.load" placeholder="50 · 50,55,60 · ^15 · (35) · band" /></div>
-          <div class="form-row">
-            <label>notable</label>
-            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
-              <input type="checkbox" x-model="editing.fields.notable" style="width: auto; height: auto; margin: 0;" />
-              first time at this load (<span class="mono">!</span>)
-            </label>
-          </div>
+
           <div class="form-row"><label>notes</label><input x-model="editing.fields.notes" placeholder="optional" /></div>
           <div class="row" style="gap: 8px; margin-top: 8px;">
             <button class="grow" @click="cancelEdit()">cancel</button>
@@ -547,12 +531,7 @@
     </datalist>
 
     <div class="wizard-text">
-      <strong>Where you are:</strong> exercises inside one block. Each row is a target prescription: sets, reps, side, load.
-      <ol>
-        <li>Tap <strong>+ exercise</strong>. Type a name; existing names autocomplete, new names create a new exercise.</li>
-        <li>Set sets, reps, load. <span class="mono">^15</span> cable, <span class="mono">(35)</span> plate per side, <span class="mono">!</span> via the notable checkbox.</li>
-        <li>Save. The exercise appears numbered <span class="mono">{block}.{i}</span>.</li>
-      </ol>
+      <strong>Where you are:</strong> exercises inside one block. <strong>Tap a row's title to open or close its editor.</strong> Notable shows as a tag in en mode and as <span class="mono">!</span> in syntax mode.
     </div>
   </div>
 
