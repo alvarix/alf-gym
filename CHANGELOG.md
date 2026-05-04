@@ -2,6 +2,24 @@
 
 All notable changes to alf-gym are recorded here. Newest entries on top.
 
+## 2026-04-30 r3.3 (model flattening)
+
+### Changed
+- **Domain model: flatten Program + Variant into single Workout entity.** `Workout { id, name, parentId, status, isCurrent }`. Lineage via `parentId`. Days belong directly to Workouts.
+- DB schema bumped to v3. `programs` and `variants` tables dropped. `workouts` table added. `days.variantId` becomes `days.workoutId`. Existing data wipes on upgrade and re-seeds.
+- Hash routes simplify: `#/w/{id}` replaces `#/p/{id}` and `#/v/{id}`.
+- Wizard creates one Workout instead of "Program + Variant".
+- Crumbs and labels updated everywhere: "Programs" -> "Workouts".
+
+### Added
+- **Fork** action on a Workout view: copies days, blocks, prescriptions into a new Workout linked by `parentId`. Auto-suggests fork name (`9.2 -> 9.3`).
+- Workouts list shows lineage (`from Workout 9`) and `current` pill.
+- `moveDay` now reorders within group only (Day A among Day As, not across groups). Fixes a r3.2 bug.
+
+### Removed
+- `Program` and `Variant` entities. SPEC and docs updated to reflect.
+- Implicit redirect from program-card to current-variant. Tapping a workout opens that workout, period.
+
 ## 2026-04-30 r3.2 (post-r3.1 review + structural prep)
 
 ### Added

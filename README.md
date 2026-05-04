@@ -47,6 +47,7 @@ Live deploy: https://alf-gym.vercel.app *(connect repo to activate)*
 
 - Default unit: lb
 - App is the system of record; manual markdown export
+- Single `Workout` entity at the top. No Program / Variant hierarchy. Lineage via `parentId`. Forking copies content.
 - Days have alts as siblings (Day A, Day A alt) grouped via `groupKey`. No separate Day Variant entity.
 - No cycle nudge
 - Storage is structured; markdown is import/export only

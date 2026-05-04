@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -E '\\\\.\\(json|js|yml|yaml\\)$')"
+      "Bash(grep -E '\\\\.\\(json|js|yml|yaml\\)$')",
+      "Bash(gh repo *)"
     ]
   }
 }

@@ -2,6 +2,24 @@
 
 ADR-lite. Each entry: date, decision, context, alternatives considered, consequences.
 
+## 2026-04-30 r3.3: Flatten Program + Variant into Workout
+
+**Decision:** Eliminate Program and Variant as separate entities. Replace with a single `Workout` entity carrying `parentId` for lineage.
+
+**Context:** User feedback after the wired prototype: "two workouts named Workout 9 on home" (data state plus hierarchy noise) and "click Workout 9 land on 9.2" (silent redirect because Programs aren't directly editable). Their mental model and Obsidian filesystem treats `Workout 9.md` and `Workout 9.2.md` as siblings. The Program -> Variant hierarchy was an imposition.
+
+**Alternatives considered:**
+- Keep the hierarchy and make the redirect explicit. Rejected: the hierarchy still doesn't match the user's mental model.
+- Treat each markdown file as a Workout, no relations. Rejected: lineage is real and useful for forks.
+
+**Consequences:**
+- Schema bumped to v3. `programs` and `variants` tables dropped. `workouts` table added. `days.variantId` becomes `days.workoutId`.
+- Hash routes simplify: `#/w/{id}` is the single workout entry. No more `#/p/...` -> `#/v/...` redirect.
+- Wizard creates one Workout instead of "Program + Variant".
+- Forking a Workout copies its days, blocks, and prescriptions into a new Workout with `parentId` set.
+- "Variant tree" becomes a tree of Workouts linked by parentId. Same concept, simpler implementation.
+- Migration: existing user data on v2 is wiped on schema upgrade. Re-seeds with two demonstration workouts (Workout 9 archived, Workout 9.2 current).
+
 ## 2026-04-30 r3: Drop manual `!` notable token (REVERSED in r3.1)
 
 **Decision:** Remove `!` from input syntax. "First time at this load" is derived at render time by comparing the new value to history of the same exercise/variation.

@@ -1,20 +1,16 @@
-// alf-gym Template Builder Alpine component (v3.2)
-// - Inline edit and add (no modals)
-// - Hide archived programs by default
-// - Obvious next-step CTAs
+// alf-gym Workout Builder Alpine component (v3.3)
+// Flat model: Workout (no Program/Variant). Lineage via parentId.
 
 function alfApp() {
   return {
-    // Route state
-    view: 'programs',
-    activeProgramId: null,
-    activeVariantId: null,
+    // Route + view
+    view: 'workouts',                 // workouts | wizard | workout | day | block
+    activeWorkoutId: null,
     activeDayId: null,
     activeBlockId: null,
 
     // Lists
-    programs: [],
-    variants: [],
+    workouts: [],
     days: [],
     blocks: [],
     prescriptions: [],
@@ -26,10 +22,10 @@ function alfApp() {
     showJson: false,
     flash: '',
 
-    // Inline edit drafts
-    editing: null,        // exercise edit/add: { id|null, exerciseQuery, fields }
-    draftBlock: null,     // { name, type, rounds, restBetweenRoundsSec }
-    draftDay: null,       // { name, groupKey, isAlt }
+    // Drafts
+    editing: null,
+    draftBlock: null,
+    draftDay: null,
 
     // Wizard state
     wizard: null,
@@ -51,40 +47,31 @@ function alfApp() {
     },
 
     // ----- Hash router -----
+    // #/, #/wizard, #/w/{id}, #/w/{id}/d/{dayId}, #/w/{id}/d/{dayId}/b/{blockId}
     async routeFromHash() {
       const h = window.location.hash || '#/';
       this.editing = null; this.draftBlock = null; this.draftDay = null;
-      const m = h.match(/^#\/(?:wizard|p\/(\d+)|v\/(\d+)(?:\/d\/(\d+)(?:\/b\/(\d+))?)?)?$/);
+      const m = h.match(/^#\/(?:wizard|w\/(\d+)(?:\/d\/(\d+)(?:\/b\/(\d+))?)?)?$/);
       if (h === '#/' || h === '' || h === '#') {
-        this.view = 'programs';
-        await this.loadPrograms();
+        this.view = 'workouts';
+        await this.loadWorkouts();
         return;
       }
       if (h === '#/wizard') { this.openWizard(); return; }
       if (m && m[1]) {
-        const p = await window.alfdb.programs.get(parseInt(m[1], 10));
-        if (!p) return this.gotoHash('#/');
-        const variants = await window.alfdb.variants.where({ programId: p.id }).toArray();
-        const cur = variants.find(v => v.isCurrent) || variants[0];
-        if (cur) return this.gotoHash('#/v/' + cur.id);
-        return this.gotoHash('#/');
-      }
-      if (m && m[2]) {
-        const variantId = parseInt(m[2], 10);
-        const variant = await window.alfdb.variants.get(variantId);
-        if (!variant) return this.gotoHash('#/');
-        this.activeVariantId = variantId;
-        this.activeProgramId = variant.programId;
-        await this.loadPrograms();
-        await this.loadVariants(variant.programId);
-        await this.loadDays(variantId);
-        if (m[3]) {
-          const dayId = parseInt(m[3], 10);
+        const workoutId = parseInt(m[1], 10);
+        const w = await window.alfdb.workouts.get(workoutId);
+        if (!w) return this.gotoHash('#/');
+        this.activeWorkoutId = workoutId;
+        await this.loadWorkouts();
+        await this.loadDays(workoutId);
+        if (m[2]) {
+          const dayId = parseInt(m[2], 10);
           this.activeDayId = dayId;
           await this.loadBlocks(dayId);
           await this.loadExercises();
-          if (m[4]) {
-            const blockId = parseInt(m[4], 10);
+          if (m[3]) {
+            const blockId = parseInt(m[3], 10);
             this.activeBlockId = blockId;
             await this.loadPrescriptions(blockId);
             this.view = 'block';
@@ -92,7 +79,7 @@ function alfApp() {
             this.view = 'day';
           }
         } else {
-          this.view = 'variant';
+          this.view = 'workout';
         }
         return;
       }
@@ -105,14 +92,11 @@ function alfApp() {
     },
 
     // ----- Loaders -----
-    async loadPrograms() {
-      this.programs = await window.alfdb.programs.toArray();
+    async loadWorkouts() {
+      this.workouts = await window.alfdb.workouts.toArray();
     },
-    async loadVariants(programId) {
-      this.variants = await window.alfdb.variants.where({ programId }).toArray();
-    },
-    async loadDays(variantId) {
-      const arr = await window.alfdb.days.where({ variantId }).toArray();
+    async loadDays(workoutId) {
+      const arr = await window.alfdb.days.where({ workoutId }).toArray();
       arr.sort((a, b) => a.order - b.order);
       this.days = arr;
       const dayIds = arr.map(d => d.id);
@@ -150,51 +134,62 @@ function alfApp() {
       const ex = this.exercises.find(e => e.id === id);
       return ex ? ex.name : '?';
     },
+    workoutName(id) {
+      const w = this.workouts.find(x => x.id === id);
+      return w ? w.name : '?';
+    },
 
-    // ----- Visible programs (hide archived) -----
-    visiblePrograms() {
-      if (this.showArchived) return this.programs;
-      return this.programs.filter(p => p.status !== 'archived');
+    // ----- Visible workouts -----
+    visibleWorkouts() {
+      if (this.showArchived) return this.workouts;
+      return this.workouts.filter(w => w.status !== 'archived');
     },
     archivedCount() {
-      return this.programs.filter(p => p.status === 'archived').length;
+      return this.workouts.filter(w => w.status === 'archived').length;
     },
-    async archiveProgram(p) {
-      if (!confirm('Archive ' + p.name + '? It stays in the database; toggle "show archived" to see it.')) return;
-      await window.alfdb.programs.update(p.id, { status: 'archived' });
-      await this.loadPrograms();
+    async archiveWorkout(w) {
+      if (!confirm('Archive ' + w.name + '? It stays in the database; toggle "show archived" to see it.')) return;
+      await window.alfdb.workouts.update(w.id, { status: 'archived', isCurrent: 0 });
+      await this.loadWorkouts();
       this.showFlash('Archived');
     },
-    async unarchiveProgram(p) {
-      await window.alfdb.programs.update(p.id, { status: 'active' });
-      await this.loadPrograms();
+    async unarchiveWorkout(w) {
+      await window.alfdb.workouts.update(w.id, { status: 'active' });
+      await this.loadWorkouts();
       this.showFlash('Restored');
     },
 
     // ----- Wizard -----
     openWizard() {
-      this.wizard = { step: 1, programName: 'Workout 10', variantName: '10.1', dayKeys: ['A', 'B', 'C'], useSkeleton: true };
+      this.wizard = {
+        step: 1,
+        name: 'Workout 10',
+        parentId: null,
+        dayKeys: ['A', 'B', 'C'],
+        useSkeleton: true
+      };
       this.view = 'wizard';
     },
     cancelWizard() { this.wizard = null; this.gotoHash('#/'); },
     async submitWizard() {
       const w = this.wizard;
-      if (!w.programName.trim() || !w.variantName.trim()) { alert('Program and variant names are required.'); return; }
-      let newVariantId = null;
+      if (!w.name.trim()) { alert('Name is required.'); return; }
+      let newId = null;
       await window.alfdb.transaction('rw',
-        [window.alfdb.programs, window.alfdb.variants, window.alfdb.days, window.alfdb.blocks],
+        [window.alfdb.workouts, window.alfdb.days, window.alfdb.blocks],
         async () => {
-          const programId = await window.alfdb.programs.add({
-            name: w.programName.trim(), status: 'active', createdAt: new Date().toISOString()
+          const id = await window.alfdb.workouts.add({
+            name: w.name.trim(),
+            parentId: w.parentId || null,
+            status: 'active',
+            isCurrent: 1,
+            createdAt: new Date().toISOString()
           });
-          const variantId = await window.alfdb.variants.add({
-            programId, name: w.variantName.trim(), isCurrent: 1, createdAt: new Date().toISOString()
-          });
-          newVariantId = variantId;
+          newId = id;
           for (let i = 0; i < w.dayKeys.length; i++) {
             const key = w.dayKeys[i];
             const dayId = await window.alfdb.days.add({
-              variantId, groupKey: key, name: 'Day ' + key, isAlt: 0, order: i + 1
+              workoutId: id, groupKey: key, name: 'Day ' + key, isAlt: 0, order: i + 1
             });
             if (w.useSkeleton) {
               const blocks = window.DAY_SKELETONS[key] || ['Warmup'];
@@ -205,11 +200,67 @@ function alfApp() {
           }
         });
       this.wizard = null;
-      this.showFlash('Created ' + w.programName);
-      this.gotoHash('#/v/' + newVariantId);
+      this.showFlash('Created ' + w.name);
+      this.gotoHash('#/w/' + newId);
     },
 
-    // ----- Variant view: Days CRUD -----
+    // ----- Fork (from a workout view) -----
+    async forkCurrent() {
+      const cur = this.activeWorkout();
+      if (!cur) return;
+      const name = prompt('Name for the new workout:', this.suggestForkName(cur.name));
+      if (!name) return;
+      let newId = null;
+      await window.alfdb.transaction('rw',
+        [window.alfdb.workouts, window.alfdb.days, window.alfdb.blocks, window.alfdb.prescriptions],
+        async () => {
+          const id = await window.alfdb.workouts.add({
+            name: name.trim(),
+            parentId: cur.id,
+            status: 'active',
+            isCurrent: 1,
+            createdAt: new Date().toISOString()
+          });
+          newId = id;
+          // Copy days, blocks, prescriptions.
+          const oldDays = await window.alfdb.days.where({ workoutId: cur.id }).toArray();
+          for (const d of oldDays) {
+            const newDayId = await window.alfdb.days.add({
+              workoutId: id, groupKey: d.groupKey, name: d.name, isAlt: d.isAlt, order: d.order
+            });
+            const oldBlocks = await window.alfdb.blocks.where({ dayId: d.id }).toArray();
+            for (const b of oldBlocks) {
+              const newBlockId = await window.alfdb.blocks.add({
+                dayId: newDayId, name: b.name, type: b.type,
+                rounds: b.rounds, restBetweenRoundsSec: b.restBetweenRoundsSec, order: b.order
+              });
+              const oldP = await window.alfdb.prescriptions.where({ blockId: b.id }).toArray();
+              for (const p of oldP) {
+                await window.alfdb.prescriptions.add({
+                  blockId: newBlockId,
+                  exerciseId: p.exerciseId, sets: p.sets, reps: p.reps, holdSec: p.holdSec,
+                  sideScheme: p.sideScheme, load: p.load, notable: !!p.notable,
+                  notes: p.notes || '', order: p.order
+                });
+              }
+            }
+          }
+          // Mark current as not the live one anymore.
+          await window.alfdb.workouts.update(cur.id, { isCurrent: 0 });
+        });
+      this.showFlash('Forked');
+      this.gotoHash('#/w/' + newId);
+    },
+    suggestForkName(name) {
+      // Workout 9.2 -> Workout 9.3 ; Workout 9 -> Workout 9.1 ; otherwise append " v2".
+      const m = name.match(/^(.*?)(\d+)(\.(\d+))?$/);
+      if (!m) return name + ' v2';
+      const base = m[1];
+      if (m[3]) return base + m[2] + '.' + (parseInt(m[4], 10) + 1);
+      return base + m[2] + '.1';
+    },
+
+    // ----- Workout view (Days CRUD) -----
     openDraftDay() {
       this.draftDay = { name: '', groupKey: 'A', isAlt: false, useSkeleton: true };
     },
@@ -220,7 +271,7 @@ function alfApp() {
       const order = this.days.length + 1;
       await window.alfdb.transaction('rw', [window.alfdb.days, window.alfdb.blocks], async () => {
         const dayId = await window.alfdb.days.add({
-          variantId: this.activeVariantId, name, groupKey: d.groupKey,
+          workoutId: this.activeWorkoutId, name, groupKey: d.groupKey,
           isAlt: d.isAlt ? 1 : 0, order
         });
         if (d.useSkeleton && !d.isAlt && window.DAY_SKELETONS[d.groupKey]) {
@@ -231,7 +282,7 @@ function alfApp() {
         }
       });
       this.draftDay = null;
-      await this.loadDays(this.activeVariantId);
+      await this.loadDays(this.activeWorkoutId);
       this.showFlash('Day added');
     },
     async deleteDay(d) {
@@ -240,16 +291,18 @@ function alfApp() {
       for (const b of blocks) await window.alfdb.prescriptions.where({ blockId: b.id }).delete();
       await window.alfdb.blocks.where({ dayId: d.id }).delete();
       await window.alfdb.days.delete(d.id);
-      await this.loadDays(this.activeVariantId);
+      await this.loadDays(this.activeWorkoutId);
       this.showFlash('Day deleted');
     },
     async moveDay(d, dir) {
-      const idx = this.days.findIndex(x => x.id === d.id);
-      const swap = this.days[idx + dir];
+      // Reorder within group only.
+      const sameGroup = this.days.filter(x => x.groupKey === d.groupKey);
+      const idx = sameGroup.findIndex(x => x.id === d.id);
+      const swap = sameGroup[idx + dir];
       if (!swap) return;
       await window.alfdb.days.update(d.id, { order: swap.order });
       await window.alfdb.days.update(swap.id, { order: d.order });
-      await this.loadDays(this.activeVariantId);
+      await this.loadDays(this.activeWorkoutId);
     },
     daysGrouped() {
       const groups = {};
@@ -260,7 +313,7 @@ function alfApp() {
       return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
     },
 
-    // ----- Day view: Blocks CRUD -----
+    // ----- Day view (Blocks CRUD) -----
     openDraftBlock() {
       this.draftBlock = { name: '', type: 'linear', rounds: 3, restBetweenRoundsSec: 90 };
     },
@@ -304,13 +357,8 @@ function alfApp() {
       await window.alfdb.blocks.update(b.id, patch);
       await this.loadBlocks(this.activeDayId);
     },
-    async renameBlock(b, name) {
-      if (!name || name === b.name) return;
-      await window.alfdb.blocks.update(b.id, { name });
-      await this.loadBlocks(this.activeDayId);
-    },
 
-    // ----- Block view: Exercises CRUD (inline) -----
+    // ----- Block view (Exercises CRUD, inline) -----
     async openAddExercise() {
       await this.loadExercises();
       const order = this.prescriptions.length + 1;
@@ -318,14 +366,10 @@ function alfApp() {
         id: null,
         exerciseQuery: '',
         fields: {
-          blockId: this.activeBlockId,
-          exerciseId: null,
+          blockId: this.activeBlockId, exerciseId: null,
           sets: 3, reps: 8, holdSec: null,
-          sideScheme: 'bilateral',
-          load: '',
-          notable: false,
-          notes: '',
-          order
+          sideScheme: 'bilateral', load: '',
+          notable: false, notes: '', order
         }
       };
     },
@@ -383,10 +427,9 @@ function alfApp() {
     },
 
     // ----- Render helpers -----
-    activeBlock()    { return this.blocks.find(b => b.id === this.activeBlockId); },
-    activeDay()      { return this.days.find(d => d.id === this.activeDayId); },
-    activeVariant()  { return this.variants.find(v => v.id === this.activeVariantId); },
-    activeProgram()  { return this.programs.find(p => p.id === this.activeProgramId); },
+    activeWorkout() { return this.workouts.find(w => w.id === this.activeWorkoutId); },
+    activeDay()     { return this.days.find(d => d.id === this.activeDayId); },
+    activeBlock()   { return this.blocks.find(b => b.id === this.activeBlockId); },
 
     formatPrescription(p) {
       return this.syntax ? this.toSyntax(p) : this.toEnglish(p);
@@ -416,31 +459,31 @@ function alfApp() {
     },
 
     nextStepHint() {
-      // Derived per-view hint to surface what to do next.
-      if (this.view === 'programs') {
-        if (this.visiblePrograms().length === 0) return { kind: 'wizard', text: 'No active program. Start the new-program wizard.' };
-        return { kind: 'open', text: 'Tap a program to open its current variant.' };
+      if (this.view === 'workouts') {
+        if (this.visibleWorkouts().length === 0) return { text: 'No active workout. Tap "+ new workout" to start the wizard.' };
+        if (this.visibleWorkouts().length === 1) return { text: 'Tap your workout to open its days.' };
+        return { text: 'Tap a workout to open its days, or fork one to a new revision.' };
       }
-      if (this.view === 'variant') {
+      if (this.view === 'workout') {
         const empty = this.days.filter(d => (d._blockCount || 0) === 0);
-        if (empty.length) return { kind: 'design', text: 'Empty days waiting: ' + empty.map(d => d.name).join(', ') };
-        return { kind: 'edit', text: 'Tap a day to edit its blocks.' };
+        if (empty.length) return { text: 'Empty days waiting: ' + empty.map(d => d.name).join(', ') };
+        return { text: 'Tap a day to edit its blocks.' };
       }
       if (this.view === 'day') {
-        if (this.blocks.length === 0) return { kind: 'add', text: 'Add the first block.' };
+        if (this.blocks.length === 0) return { text: 'Add the first block.' };
         const empty = this.blocks.filter(b => (b._exCount || 0) === 0);
-        if (empty.length) return { kind: 'fill', text: 'Empty blocks: ' + empty.map(b => b.name).join(', ') };
-        return { kind: 'review', text: 'All blocks have exercises. Review or reorder.' };
+        if (empty.length) return { text: 'Empty blocks: ' + empty.map(b => b.name).join(', ') };
+        return { text: 'All blocks have exercises. Review or reorder.' };
       }
       if (this.view === 'block') {
-        if (this.prescriptions.length === 0) return { kind: 'add', text: 'Add the first exercise.' };
-        return { kind: 'add', text: 'Add another exercise, or reorder the existing ones.' };
+        if (this.prescriptions.length === 0) return { text: 'Add the first exercise.' };
+        return { text: 'Add another exercise, or reorder the existing ones.' };
       }
       return null;
     },
 
     async resetEverything() {
-      if (!confirm('Wipe local IndexedDB and re-seed Workout 9.2?')) return;
+      if (!confirm('Wipe local IndexedDB and re-seed?')) return;
       await window.alfdbReset();
       this.gotoHash('#/');
       this.showFlash('DB reset');

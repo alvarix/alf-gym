@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>alf-gym - Template Builder</title>
+  <title>alf-gym - Workout Builder</title>
   <link rel="stylesheet" href="assets/styles.css">
   <style>
     body { background: var(--bg); }
@@ -42,6 +42,7 @@
     .inline-form-head { font-size: 13px; font-weight: 500; margin-bottom: 8px; }
     .pill-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-family: var(--mono); }
     .pill-tag.archived { background: var(--surface-2); color: var(--text-3); }
+    .pill-tag.lineage { background: var(--surface-2); color: var(--text-2); }
     .archived-row { opacity: 0.6; }
   </style>
 </head>
@@ -51,17 +52,17 @@
   <!-- Menubar -->
   <div class="menubar">
     <div style="min-width: 0;">
-      <div class="title">alf-gym &middot; Template Builder</div>
+      <div class="title">alf-gym &middot; Workout Builder</div>
       <div class="crumbs">
-        <a @click="gotoHash('#/')">Programs</a>
+        <a @click="gotoHash('#/')">Workouts</a>
         <template x-if="view === 'wizard'">
-          <span><span class="sep">›</span><span>new program</span></span>
+          <span><span class="sep">›</span><span>new workout</span></span>
         </template>
-        <template x-if="view === 'variant' || view === 'day' || view === 'block'">
-          <span><span class="sep">›</span><a @click="gotoHash('#/v/' + activeVariantId)" x-text="(activeProgram() ? activeProgram().name : '?') + ' / ' + (activeVariant() ? activeVariant().name : '?')"></a></span>
+        <template x-if="view === 'workout' || view === 'day' || view === 'block'">
+          <span><span class="sep">›</span><a @click="gotoHash('#/w/' + activeWorkoutId)" x-text="activeWorkout() ? activeWorkout().name : '?'"></a></span>
         </template>
         <template x-if="view === 'day' || view === 'block'">
-          <span><span class="sep">›</span><a @click="gotoHash('#/v/' + activeVariantId + '/d/' + activeDayId)" x-text="activeDay() ? activeDay().name : ''"></a></span>
+          <span><span class="sep">›</span><a @click="gotoHash('#/w/' + activeWorkoutId + '/d/' + activeDayId)" x-text="activeDay() ? activeDay().name : ''"></a></span>
         </template>
         <template x-if="view === 'block'">
           <span><span class="sep">›</span><span x-text="activeBlock() ? activeBlock().name : ''"></span></span>
@@ -82,12 +83,12 @@
     <div class="row spread" style="margin-bottom: 8px;">
       <strong style="font-weight: 500;">JSON snapshot</strong>
       <div class="row tight">
-        <button class="tiny" @click="navigator.clipboard.writeText(JSON.stringify({programs, variants, days, blocks, prescriptions, exercises}, null, 2)); showFlash('Copied JSON')">copy</button>
+        <button class="tiny" @click="navigator.clipboard.writeText(JSON.stringify({workouts, days, blocks, prescriptions, exercises}, null, 2)); showFlash('Copied JSON')">copy</button>
         <button class="tiny" @click="resetEverything()" style="color: var(--danger);">reset DB</button>
         <button class="tiny" @click="showJson = false">close</button>
       </div>
     </div>
-    <div class="json-dump" x-text="JSON.stringify({programs, variants, days, blocks, prescriptions, exercises, _hash: window.location.hash}, null, 2)"></div>
+    <div class="json-dump" x-text="JSON.stringify({workouts, days, blocks, prescriptions, exercises, _hash: window.location.hash}, null, 2)"></div>
   </div>
 
   <!-- Next step strip -->
@@ -98,40 +99,50 @@
     </div>
   </template>
 
-  <!-- Programs list -->
-  <div x-show="view === 'programs'">
+  <!-- Workouts list -->
+  <div x-show="view === 'workouts'">
     <div class="row spread" style="margin-bottom: 8px;">
-      <h2 style="margin: 0;">Programs</h2>
-      <button class="new-btn" @click="gotoHash('#/wizard')">+ new program</button>
+      <h2 style="margin: 0;">Workouts</h2>
+      <button class="new-btn" @click="gotoHash('#/wizard')">+ new workout</button>
     </div>
 
-    <template x-if="visiblePrograms().length === 0 && archivedCount() === 0">
+    <template x-if="visibleWorkouts().length === 0 && archivedCount() === 0">
       <div class="empty-state">
-        <div class="text">No programs yet. Start by creating one.</div>
-        <button class="primary" @click="gotoHash('#/wizard')">+ new program</button>
+        <div class="text">No workouts yet. Start by creating one.</div>
+        <button class="primary" @click="gotoHash('#/wizard')">+ new workout</button>
       </div>
     </template>
 
-    <template x-for="p in visiblePrograms()" :key="p.id">
-      <div class="ix-card" :class="p.status === 'archived' ? 'archived-row' : ''">
+    <template x-for="w in visibleWorkouts()" :key="w.id">
+      <div class="ix-card" :class="w.status === 'archived' ? 'archived-row' : ''">
         <div class="row spread">
-          <div @click="gotoHash('#/p/' + p.id)" style="cursor: pointer; flex: 1;">
+          <div @click="gotoHash('#/w/' + w.id)" style="cursor: pointer; flex: 1; min-width: 0;">
             <div class="title">
-              <span x-text="p.name"></span>
-              <template x-if="p.status === 'archived'">
+              <span x-text="w.name"></span>
+              <template x-if="w.status === 'archived'">
                 <span class="pill-tag archived">archived</span>
               </template>
+              <template x-if="w.isCurrent">
+                <span class="pill-tag" style="background: var(--accent-bg); color: var(--accent);">current</span>
+              </template>
             </div>
-            <div class="meta"><span x-text="p.status"></span></div>
+            <div class="meta">
+              <template x-if="w.parentId">
+                <span class="pill-tag lineage">from <span x-text="workoutName(w.parentId)"></span></span>
+              </template>
+              <template x-if="!w.parentId">
+                <span class="dim">root</span>
+              </template>
+            </div>
           </div>
           <div class="actions">
-            <template x-if="p.status === 'archived'">
-              <button @click="unarchiveProgram(p)" title="restore">↺</button>
+            <template x-if="w.status === 'archived'">
+              <button @click="unarchiveWorkout(w)" title="restore">↺</button>
             </template>
-            <template x-if="p.status !== 'archived'">
-              <button @click="archiveProgram(p)" title="archive">⌽</button>
+            <template x-if="w.status !== 'archived'">
+              <button @click="archiveWorkout(w)" title="archive">⌽</button>
             </template>
-            <button @click="gotoHash('#/p/' + p.id)">open</button>
+            <button @click="gotoHash('#/w/' + w.id)">open</button>
           </div>
         </div>
       </div>
@@ -146,31 +157,36 @@
     </div>
 
     <div class="wizard-text">
-      <strong>Where you are:</strong> Programs is the top of the hierarchy. A Program ("Workout 9") is a training block that runs for several cycles before you redesign it. Old programs can be archived, not deleted.
+      <strong>Where you are:</strong> all your workouts. Each workout (e.g. <span class="mono">Workout 9.2</span>) is one designed program. Revisions are sibling workouts linked by lineage: tap a workout to open its days, or fork a workout to start a new revision.
       <ol>
-        <li>Tap <strong>+ new program</strong> to launch the wizard.</li>
-        <li>Tap a program to jump into its current variant.</li>
-        <li>Toggle <strong>show archived</strong> to refer back to past programs.</li>
+        <li>Tap <strong>+ new workout</strong> to start the wizard.</li>
+        <li>Tap an existing workout to open its days.</li>
+        <li>Toggle <strong>show archived</strong> to refer back to past workouts.</li>
       </ol>
     </div>
   </div>
 
   <!-- Wizard -->
   <div x-show="view === 'wizard'">
-    <h2>New program wizard</h2>
+    <h2>New workout</h2>
     <template x-if="wizard">
       <div>
         <div class="ix-card" x-show="wizard.step === 1">
           <div class="inline-form-head">Step 1 of 2: name it</div>
           <div class="form-row">
-            <label>program</label>
-            <input x-model="wizard.programName" placeholder="Workout 10" />
+            <label>name</label>
+            <input x-model="wizard.name" placeholder="Workout 10" autofocus />
           </div>
           <div class="form-row">
-            <label>first variant</label>
-            <input x-model="wizard.variantName" placeholder="10.1" />
+            <label>parent</label>
+            <select x-model.number="wizard.parentId">
+              <option :value="null">(none, this is a root workout)</option>
+              <template x-for="w in workouts" :key="w.id">
+                <option :value="w.id" x-text="w.name"></option>
+              </template>
+            </select>
           </div>
-          <div class="muted" style="font-size: 12px;">A Program holds Variants (10, 10.1, 10.2). Each Variant holds Days.</div>
+          <div class="muted" style="font-size: 12px;">Pick a parent if this is a revision (e.g. 9.3 forking from 9.2). Days and blocks won't auto-copy from the parent here; this is a fresh workout. Use "fork" on the parent's view to copy contents.</div>
           <div class="row" style="gap: 8px; margin-top: 12px;">
             <button class="grow" @click="cancelWizard()">cancel</button>
             <button class="grow primary" @click="wizard.step = 2">next</button>
@@ -179,7 +195,7 @@
 
         <div class="ix-card" x-show="wizard.step === 2">
           <div class="inline-form-head">Step 2 of 2: pick Days</div>
-          <div class="muted" style="font-size: 12px; margin-bottom: 8px;">Each Day is pre-filled with a skeleton of empty blocks based on movement patterns. You add the actual exercises later.</div>
+          <div class="muted" style="font-size: 12px; margin-bottom: 8px;">Each Day starts with a skeleton of empty blocks based on movement patterns. You'll add exercises after.</div>
           <div class="col tight">
             <template x-for="key in ['A','B','C']" :key="key">
               <label class="ix-card alt" style="cursor: pointer; margin-bottom: 4px;">
@@ -204,27 +220,35 @@
           </div>
           <div class="row" style="gap: 8px; margin-top: 12px;">
             <button class="grow" @click="wizard.step = 1">back</button>
-            <button class="grow primary" @click="submitWizard()">create program</button>
+            <button class="grow primary" @click="submitWizard()">create workout</button>
           </div>
         </div>
       </div>
     </template>
 
     <div class="wizard-text">
-      <strong>What this creates:</strong> a Program, one Variant, the Days you ticked, and (with skeleton on) blocks named after movement patterns. Blocks start empty so you can add exercises into them next.
+      <strong>What this creates:</strong> one Workout, the Days you ticked, and (with skeleton on) blocks named after movement patterns. Blocks start empty so you can add exercises into them next.
     </div>
   </div>
 
-  <!-- Variant view (Days list) -->
-  <div x-show="view === 'variant'">
+  <!-- Workout view (Days list) -->
+  <div x-show="view === 'workout'">
     <div class="row spread" style="margin-bottom: 8px;">
-      <h2 style="margin: 0;" x-text="activeVariant() ? activeVariant().name : ''"></h2>
-      <button class="new-btn" @click="openDraftDay()" x-show="!draftDay">+ day</button>
+      <h2 style="margin: 0;" x-text="activeWorkout() ? activeWorkout().name : ''"></h2>
+      <div class="row tight">
+        <button @click="forkCurrent()" title="copy this workout to a new revision">fork</button>
+        <button class="new-btn" @click="openDraftDay()" x-show="!draftDay">+ day</button>
+      </div>
     </div>
+    <template x-if="activeWorkout() && activeWorkout().parentId">
+      <div class="muted" style="font-size: 12px; margin-bottom: 8px;">
+        revision of <span class="mono" x-text="workoutName(activeWorkout().parentId)"></span>
+      </div>
+    </template>
 
     <template x-if="days.length === 0 && !draftDay">
       <div class="empty-state">
-        <div class="text">No days in this variant yet.</div>
+        <div class="text">No days in this workout yet.</div>
         <button class="primary" @click="openDraftDay()">+ add a day</button>
       </div>
     </template>
@@ -235,7 +259,7 @@
         <template x-for="d in group" :key="d.id">
           <div class="ix-card" :class="d.isAlt ? 'alt' : ''">
             <div class="row spread">
-              <div @click="gotoHash('#/v/' + activeVariantId + '/d/' + d.id)" style="cursor: pointer; flex: 1; min-width: 0;">
+              <div @click="gotoHash('#/w/' + activeWorkoutId + '/d/' + d.id)" style="cursor: pointer; flex: 1; min-width: 0;">
                 <div class="title" x-text="d.name"></div>
                 <div class="meta">
                   <span x-show="d.isAlt">alt &middot; </span>
@@ -246,7 +270,7 @@
               <div class="actions">
                 <button @click="moveDay(d, -1)" title="up">↑</button>
                 <button @click="moveDay(d, 1)" title="down">↓</button>
-                <button @click="gotoHash('#/v/' + activeVariantId + '/d/' + d.id)">edit</button>
+                <button @click="gotoHash('#/w/' + activeWorkoutId + '/d/' + d.id)">edit</button>
                 <button @click="deleteDay(d)" title="delete">×</button>
               </div>
             </div>
@@ -296,11 +320,11 @@
     </div>
 
     <div class="wizard-text">
-      <strong>Where you are:</strong> the Variant's Days. Day A, Day B, Day C, plus alts (Day A alt - home) as siblings.
+      <strong>Where you are:</strong> the days inside this workout. Each Day groups blocks. Alts (Day A alt - home) are siblings under the same letter.
       <ol>
         <li>Tap a Day to open its blocks.</li>
         <li>Empty Days say <span class="dim">empty &middot; tap to design</span>. Use them to practice.</li>
-        <li>Use <span class="kbd">↑</span> <span class="kbd">↓</span> to reorder.</li>
+        <li>Tap <strong>fork</strong> to copy this whole workout into a new revision (e.g. 9.2 -> 9.3).</li>
       </ol>
     </div>
   </div>
@@ -322,7 +346,7 @@
     <template x-for="(b, i) in blocks" :key="b.id">
       <div class="ix-card">
         <div class="row spread">
-          <div @click="gotoHash('#/v/' + activeVariantId + '/d/' + activeDayId + '/b/' + b.id)" style="cursor: pointer; flex: 1; min-width: 0;">
+          <div @click="gotoHash('#/w/' + activeWorkoutId + '/d/' + activeDayId + '/b/' + b.id)" style="cursor: pointer; flex: 1; min-width: 0;">
             <div class="title">
               <span class="mono dim" x-text="(i+1) + '.'"></span>
               <span x-text="b.name"></span>
@@ -385,9 +409,9 @@
     </div>
 
     <div class="wizard-text">
-      <strong>Where you are:</strong> blocks of one Day. Each block is a movement pattern (Warmup, Squat, Pull, etc.) and runs as <span class="kbd">linear</span> or <span class="kbd">circuit</span>.
+      <strong>Where you are:</strong> blocks of one Day. Each block runs as <span class="kbd">linear</span> or <span class="kbd">circuit</span>.
       <ol>
-        <li>Tap a block to add or edit exercises inside.</li>
+        <li>Tap a block to add or edit exercises.</li>
         <li>Use <span class="kbd">⇄</span> to flip linear ↔ circuit.</li>
         <li>Reorder with <span class="kbd">↑</span> <span class="kbd">↓</span>.</li>
       </ol>
@@ -418,7 +442,6 @@
 
     <template x-for="(p, i) in prescriptions" :key="p.id">
       <div class="ix-card" :class="editing && editing.id === p.id ? 'editing' : ''">
-        <!-- normal row -->
         <div class="row spread" x-show="!(editing && editing.id === p.id)">
           <div style="flex: 1; min-width: 0;">
             <div class="title">
@@ -435,7 +458,6 @@
             <button @click="deleteExercise(p)">×</button>
           </div>
         </div>
-        <!-- inline edit form -->
         <div x-show="editing && editing.id === p.id" class="inline-form">
           <div class="inline-form-head">Edit exercise</div>
           <template x-if="editing && editing.id === p.id">
@@ -456,22 +478,10 @@
                   <option value="alternating">alternating</option>
                 </select>
               </div>
-              <div class="form-row">
-                <label>sets</label>
-                <input type="number" x-model.number="editing.fields.sets" min="1" />
-              </div>
-              <div class="form-row">
-                <label>reps</label>
-                <input x-model="editing.fields.reps" placeholder="8 or 8,10,12 or blank" />
-              </div>
-              <div class="form-row">
-                <label>hold (sec)</label>
-                <input type="number" x-model.number="editing.fields.holdSec" placeholder="optional" />
-              </div>
-              <div class="form-row">
-                <label>load (lb)</label>
-                <input x-model="editing.fields.load" placeholder="50 · 50,55,60 · ^15 · (35) · band" />
-              </div>
+              <div class="form-row"><label>sets</label><input type="number" x-model.number="editing.fields.sets" min="1" /></div>
+              <div class="form-row"><label>reps</label><input x-model="editing.fields.reps" placeholder="8 or 8,10,12 or blank" /></div>
+              <div class="form-row"><label>hold (sec)</label><input type="number" x-model.number="editing.fields.holdSec" placeholder="optional" /></div>
+              <div class="form-row"><label>load (lb)</label><input x-model="editing.fields.load" placeholder="50 · 50,55,60 · ^15 · (35) · band" /></div>
               <div class="form-row">
                 <label>notable</label>
                 <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
@@ -479,10 +489,7 @@
                   first time at this load (renders <span class="mono">!</span>)
                 </label>
               </div>
-              <div class="form-row">
-                <label>notes</label>
-                <input x-model="editing.fields.notes" placeholder="optional" />
-              </div>
+              <div class="form-row"><label>notes</label><input x-model="editing.fields.notes" placeholder="optional" /></div>
               <div class="row" style="gap: 8px; margin-top: 8px;">
                 <button class="grow" @click="cancelEdit()">cancel</button>
                 <button class="grow primary" @click="saveEdit()">save</button>
@@ -493,7 +500,6 @@
       </div>
     </template>
 
-    <!-- Inline draft (new exercise) -->
     <div x-show="editing && !editing.id" class="ix-card draft">
       <div class="inline-form-head">Add exercise</div>
       <template x-if="editing && !editing.id">
@@ -514,22 +520,10 @@
               <option value="alternating">alternating</option>
             </select>
           </div>
-          <div class="form-row">
-            <label>sets</label>
-            <input type="number" x-model.number="editing.fields.sets" min="1" />
-          </div>
-          <div class="form-row">
-            <label>reps</label>
-            <input x-model="editing.fields.reps" placeholder="8 or 8,10,12" />
-          </div>
-          <div class="form-row">
-            <label>hold (sec)</label>
-            <input type="number" x-model.number="editing.fields.holdSec" placeholder="optional" />
-          </div>
-          <div class="form-row">
-            <label>load (lb)</label>
-            <input x-model="editing.fields.load" placeholder="50 · 50,55,60 · ^15 · (35) · band" />
-          </div>
+          <div class="form-row"><label>sets</label><input type="number" x-model.number="editing.fields.sets" min="1" /></div>
+          <div class="form-row"><label>reps</label><input x-model="editing.fields.reps" placeholder="8 or 8,10,12" /></div>
+          <div class="form-row"><label>hold (sec)</label><input type="number" x-model.number="editing.fields.holdSec" placeholder="optional" /></div>
+          <div class="form-row"><label>load (lb)</label><input x-model="editing.fields.load" placeholder="50 · 50,55,60 · ^15 · (35) · band" /></div>
           <div class="form-row">
             <label>notable</label>
             <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
@@ -537,10 +531,7 @@
               first time at this load (<span class="mono">!</span>)
             </label>
           </div>
-          <div class="form-row">
-            <label>notes</label>
-            <input x-model="editing.fields.notes" placeholder="optional" />
-          </div>
+          <div class="form-row"><label>notes</label><input x-model="editing.fields.notes" placeholder="optional" /></div>
           <div class="row" style="gap: 8px; margin-top: 8px;">
             <button class="grow" @click="cancelEdit()">cancel</button>
             <button class="grow primary" @click="saveEdit()">add exercise</button>
@@ -565,7 +556,6 @@
     </div>
   </div>
 
-  <!-- Flash toast -->
   <div x-show="flash" class="flash" x-text="flash"></div>
 
 </div>

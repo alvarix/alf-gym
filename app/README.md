@@ -12,7 +12,8 @@ If running a local server (e.g. `python3 -m http.server`), styles work because `
 
 - Hash-routed URLs (back/forward, bookmark any view).
 - New-program wizard: name -> Day picker (with skeletons) -> create.
-- CRUD on Programs, Variants, Days (with alt grouping), Blocks (linear or circuit), Exercises (the data field is `prescriptions`, but the UI says "exercise").
+- CRUD on Workouts (no Program/Variant), Days (with alt grouping), Blocks (linear or circuit), Exercises (the data field is `prescriptions`, but the UI says "exercise").
+- Fork a workout to a new revision: copies days, blocks, prescriptions; links via `parentId`.
 - Day skeletons for A/B/C use movement-pattern blocks (Squat, Push, Pull, Hinge...).
 - Persisted to IndexedDB (Dexie). Idempotent seed: re-loads do not duplicate data.
 - App-wide `en | syn` toggle in the header.

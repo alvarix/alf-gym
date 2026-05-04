@@ -51,9 +51,12 @@ Both live in Template Builder; you switch level via breadcrumb.
 ## 4. Domain Model
 
 ```
-Program 1..n Variant 1..n Day 1..n Block 1..n Prescription
-                                                  |
-                                                  +--> Exercise (1..n Variation)
+Workout 1..n Day 1..n Block 1..n Prescription
+                                       |
+                                       +--> Exercise (1..n Variation)
+
+Workout { id, name, parentId, status, isCurrent, createdAt }
+  parentId points to the previous revision in lineage. null = root workout.
 
 Day.groupKey: string (e.g. "A") - groups Day A and Day A alt in the picker
 Day.isAlt: bool
@@ -70,7 +73,7 @@ Prescription 0..n TrackerLink (links a tracker to this prescription)
 Tracker { id, name, kind: injury | asymmetry | skill, status, severity?, side?, notes }
 TrackerLink { trackerId, exerciseId, prescriptionId? }
 
-Session belongs_to Day
+Session belongs_to Day, which belongs_to Workout (no Program/Variant entities)
 Session 1..n Performance
 Session.notes: { running: [LogEntry], dayNote: string }
 Performance references Prescription
@@ -327,6 +330,8 @@ Out (deferred):
 - 2026-04-29 r2: Phased mockup approach (P1-P4). Cut MVP views by half. Hierarchical 2.1 numbering. Set entry switches to prefill + chevron increments. english/syntax toggle. Speech removed (P4). Quick-edit deferred (P3). Smith machine BSS reclassified as variation of parent BSS. Storage is structured; MD is import/export only. Tests and docs scaffolded from start.
 - 2026-04-30 r3: Notation simplifications. `!` dropped (notable derived). `:` for per-side replaced by `;` (parser accepts both, normalizes to `;`). English mode shows zero syntax tokens. Day Variants entity removed; Days have `groupKey` and `isAlt` instead. Park variant abandoned. Trackers (injury, asymmetry, skill) added as a new primitive with own history pivot, linkable to exercises. Syntax toggle moves to app-wide menu bar. Global floating new-session button added. Notes at three levels (running log, per-day, per-exercise). History chart: high/low value labels and compare-with-other-exercise overlay. Next concrete work: wire Template Builder.
 - 2026-04-30 r3.1 (post wired-prototype review): Reverse the `!` removal. `!` stays as user input. Bug fixes in wired Template Builder: idempotent seed (no duplicate programs), self-contained app/ folder (no parent-dir references), hash-routed URLs for back/forward, omnibox for exercise selection (replaces select), Day skeleton starter templates (Day A: Warmup, Squat, Push, Anti-Rotation, Plyo; Day B: Warmup, Hinge, Lunge, Pull, Hips, Rotation), "new program" wizard, "exercise" replaces "prescription" in UI labels, lb units in seed.
+- 2026-04-30 r3.2 (post-r3.1 review): Inline edit replaces modal for exercises. Inline draft replaces prompt() for blocks and days. Hide archived programs by default. Empty states with explicit CTA cards. Context-aware next-step strip on every view. SvelteKit migration plan documented. User stories written. Design + use process review (twice each) captured 18 findings.
+- 2026-04-30 r3.3 (post-r3.2 review): **Flatten Program + Variant into a single Workout entity.** The Program/Variant distinction was conceptual overhead the user does not have; it caused two confusions ("two workouts named Workout 9" and "click Workout 9 land on 9.2"). New shape: `Workout { id, name, parentId, status, isCurrent }`. Lineage by `parentId`. Days now belong directly to Workouts. Routes change from `#/p/{id}` and `#/v/{id}` to `#/w/{id}`. Wizard creates a single Workout. New `fork` action on a Workout copies its days/blocks/prescriptions into a new Workout linked by `parentId`. Auto-suggest fork name (`9.2 -> 9.3`).
 
 ## 18. Open Questions
 
