@@ -8,3 +8,6 @@ dist/
 .cache/
 .mockup/
 .mockup*
+mockup/
+mockup-v1/
+mockup-v2/
