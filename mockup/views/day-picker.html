@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym - day picker</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>Day picker</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      Pick the Day, then pick a Day Variant if alts exist (e.g. Day A and Day A - Home alt).
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span class="title">Start session</span>
+          <span class="muted">cancel</span>
+        </div>
+
+        <div class="section">
+          <div class="section-head">program / variant</div>
+          <div class="card">
+            <div class="row spread">
+              <div>
+                <div style="font-weight: 500;">Workout 9</div>
+                <div class="muted" style="font-size: 12px;">variant 9.2 &middot; running 4 of ~5 cycles</div>
+              </div>
+              <button class="tiny">change</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">day</div>
+          <div class="col tight">
+            <div class="card" style="border-color: var(--text);">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Day A &middot; Front</div>
+                  <div class="muted" style="font-size: 12px;">~75 min &middot; last 4/27 (gym) &middot; 4/19 (home alt)</div>
+                </div>
+                <span class="pill accent">selected</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Day B &middot; Back</div>
+                  <div class="muted" style="font-size: 12px;">~75 min &middot; last 4/22</div>
+                </div>
+                <span class="dim">›</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Day C &middot; Skills + Diagnostics</div>
+                  <div class="muted" style="font-size: 12px;">~60 min &middot; last 4/24</div>
+                </div>
+                <span class="dim">›</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">day variant</div>
+          <div class="muted" style="font-size: 12px; margin-bottom: 8px;">3 variants under Day A. Pick one or create a session-time override.</div>
+          <div class="col tight">
+            <label class="card" style="cursor: pointer; border-color: var(--text);">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">gym (canonical)</div>
+                  <div class="muted" style="font-size: 12px;">Smith machine, cables, full kit</div>
+                </div>
+                <input type="radio" name="variant" checked style="width: auto; height: auto; margin: 0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">home alt</div>
+                  <div class="muted" style="font-size: 12px;">Bench, DBs to 50, pull-up bar, bands, sled</div>
+                </div>
+                <input type="radio" name="variant" style="width: auto; height: auto; margin: 0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">park alt</div>
+                  <div class="muted" style="font-size: 12px;">Bodyweight only</div>
+                </div>
+                <input type="radio" name="variant" style="width: auto; height: auto; margin: 0;" />
+              </div>
+            </label>
+            <button>+ new day variant</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">copy from</div>
+          <div class="row tight wrap">
+            <button class="tiny" style="background: var(--surface-2);">last same-day same-variant (4/27)</button>
+            <button class="tiny">last 9.2 Day A (any env)</button>
+            <button class="tiny">blank template</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <button class="full primary">start Day A &middot; gym</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="annotation">
+      <strong>Day Variants</strong> are first-class siblings under a Day. Creating one captures equipment context permanently. <strong>Session-time override</strong> is for one-off changes that aren't worth saving as a variant; uses quick-edit prompt instead.
+    </p>
+  </main>
+</body>
+</html>

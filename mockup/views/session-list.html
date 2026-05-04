@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym - session list view</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.0/cdn.min.js"></script>
+  <script defer src="../assets/app.js"></script>
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>Session: list view (default)</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      Whole workout visible as numbered steps grouped by block. Tap any row to expand its set entry inline. Use the <span class="kbd">focus</span> toggle to zoom into the active exercise.
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span><span class="title">9.2</span> <span class="subtitle">Day A &middot; Front</span></span>
+          <span class="timer">47:22</span>
+        </div>
+
+        <div class="section" style="padding: 10px 14px;">
+          <div class="row spread">
+            <div class="row tight">
+              <span class="pill accent">in progress</span>
+              <span class="muted" style="font-size: 12px;">5 / 15 done</span>
+            </div>
+            <div class="tab-toggle">
+              <button class="on">list</button>
+              <button>focus</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="block-head">
+          <div class="label"><span class="num">1.</span>Warmup</div>
+          <span class="badge">linear &middot; 4 ex</span>
+        </div>
+        <div class="ex-row done">
+          <div class="num">1</div>
+          <div>
+            <div class="name">World's greatest stretch</div>
+            <div class="prescr">:5-1</div>
+          </div>
+          <div class="status mono">done</div>
+        </div>
+        <div class="ex-row done">
+          <div class="num">2</div>
+          <div>
+            <div class="name">Banded monster walks</div>
+            <div class="prescr">:12-2 each direction</div>
+          </div>
+          <div class="status mono">done</div>
+        </div>
+        <div class="ex-row done">
+          <div class="num">3</div>
+          <div>
+            <div class="name">Single-leg balance, eyes closed</div>
+            <div class="prescr">:30s</div>
+            <div class="ghost">last: 2-4s before slip</div>
+          </div>
+          <div class="status mono">done</div>
+        </div>
+        <div class="ex-row done">
+          <div class="num">4</div>
+          <div>
+            <div class="name">Single-leg forward hop to stick</div>
+            <div class="prescr">:3-3</div>
+          </div>
+          <div class="status mono">done</div>
+        </div>
+
+        <div class="block-head">
+          <div class="label"><span class="num">2.</span>Anchor</div>
+          <span class="badge">linear &middot; 2 ex</span>
+        </div>
+        <div class="ex-row active" style="grid-template-columns: 24px 1fr; padding-bottom: 4px;">
+          <div class="num mono">5</div>
+          <div>
+            <div class="row spread" style="align-items: flex-start;">
+              <div>
+                <div class="name">Smith machine BSS</div>
+                <div class="prescr">50!:8 &middot; 50:10 &middot; 50:12</div>
+                <div class="ghost">last 4/16 (alt): tempo BSS DBs &middot; 30!:10-3</div>
+              </div>
+              <button class="tiny">swap</button>
+            </div>
+          </div>
+        </div>
+        <div style="padding: 0 14px 10px 46px;">
+          <div class="set-row">
+            <span class="lbl">Set 1</span>
+            <div class="cell done">50<span style="color: var(--accent);">!</span></div>
+            <div class="cell done">:8</div>
+            <div class="check"><span style="color: var(--success);">&#10003;</span></div>
+          </div>
+          <div class="set-row">
+            <span class="lbl">Set 2</span>
+            <div class="cell done">50</div>
+            <div class="cell done">:10</div>
+            <div class="check"><span style="color: var(--success);">&#10003;</span></div>
+          </div>
+          <div class="set-row">
+            <span class="lbl">Set 3</span>
+            <div class="cell active">50</div>
+            <div class="cell active">:12</div>
+            <div class="check"><span class="dim">&middot;</span></div>
+          </div>
+          <div class="row tight" style="margin-top: 6px;">
+            <span class="pill danger">$2 L hip</span>
+          </div>
+          <div class="row" style="margin-top: 8px; gap: 6px;">
+            <button class="tiny">+ set</button>
+            <button class="tiny">$ pain</button>
+            <button class="tiny">note</button>
+            <button class="tiny">cues</button>
+          </div>
+        </div>
+
+        <div class="ex-row">
+          <div class="num">6</div>
+          <div>
+            <div class="name">Zercher squat</div>
+            <div class="prescr">70:8-3</div>
+            <div class="ghost">last 4/16: 60!:8-3</div>
+          </div>
+          <div class="status mono">up next</div>
+        </div>
+
+        <div class="block-head">
+          <div class="label"><span class="num">3.</span>Anti-rotation</div>
+          <span class="badge">linear &middot; 1 ex</span>
+        </div>
+        <div class="ex-row">
+          <div class="num">7</div>
+          <div>
+            <div class="name">Cable woodchop high-to-low</div>
+            <div class="prescr">^15:10-3</div>
+          </div>
+          <div class="status mono">pending</div>
+        </div>
+
+        <div class="block-head">
+          <div class="label"><span class="num">4.</span>KB compound</div>
+          <span class="badge circuit">circuit &middot; 3 rounds</span>
+        </div>
+        <div class="ex-row">
+          <div class="num">8</div>
+          <div>
+            <div class="name">KB clean to front squat &middot; KB figure 8 &middot; Sprawl</div>
+            <div class="prescr">:6 &middot; 10 &middot; 8 &middot; 90s rest</div>
+            <div class="ghost">last 4/16: completed @ 16 kg</div>
+          </div>
+          <div class="status mono">pending</div>
+        </div>
+
+        <div class="block-head">
+          <div class="label"><span class="num">5.</span>Shoulder ramp</div>
+          <span class="badge">linear &middot; 2 ex</span>
+        </div>
+        <div class="ex-row">
+          <div class="num">9</div>
+          <div>
+            <div class="name">Cross cable Y raise</div>
+            <div class="prescr">^3:10-2</div>
+          </div>
+          <div class="status mono">pending</div>
+        </div>
+        <div class="ex-row">
+          <div class="num">10</div>
+          <div>
+            <div class="name">Light cable face pull</div>
+            <div class="prescr">^35:12-2</div>
+          </div>
+          <div class="status mono">pending</div>
+        </div>
+
+        <div class="block-head">
+          <div class="label"><span class="num">6.</span>Calf PT</div>
+          <span class="badge">linear &middot; 3 ex</span>
+        </div>
+        <div class="ex-row">
+          <div class="num">11</div>
+          <div>
+            <div class="name">Seated bent-knee calf raise</div>
+            <div class="prescr">85:12-3</div>
+          </div>
+          <div class="status mono">pending</div>
+        </div>
+        <div class="ex-row">
+          <div class="num">12</div>
+          <div>
+            <div class="name">Eccentric calf raise off step</div>
+            <div class="prescr">45::8-3</div>
+          </div>
+          <div class="status mono">pending</div>
+        </div>
+        <div class="ex-row">
+          <div class="num">13</div>
+          <div>
+            <div class="name">Banded dorsiflexion mob</div>
+            <div class="prescr">:30s-2</div>
+          </div>
+          <div class="status mono">pending</div>
+        </div>
+
+        <div class="fab">
+          <div class="mic"><span class="mono" style="font-size: 14px;">🎙</span></div>
+          <input placeholder="quick edit: swap, add, drop, set..." />
+          <button class="primary tiny">go</button>
+        </div>
+
+        <div class="section center" style="padding: 10px 14px;">
+          <button class="full">end session</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="annotation">
+      <strong>List view default.</strong> Whole workout visible.
+      <br><strong>Active exercise expanded</strong> in place; everything else collapsed to one row.
+      <br><strong>Circuit blocks</strong> render as one card showing the rotation summary; tap to enter circuit detail.
+      <br><strong>Quick-edit bar</strong> sticky at the bottom. Mic button opens speech capture. <span class="kbd">go</span> opens diff preview.
+    </p>
+  </main>
+</body>
+</html>

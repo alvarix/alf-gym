@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym - template builder</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>Template builder</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      Edit prescriptions per Day and Day Variant. Add exercises by searching the global library. Set block type. Drag to reorder.
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span class="title">9.2 / Day A / gym</span>
+          <span class="muted">save</span>
+        </div>
+
+        <div class="section">
+          <div class="section-head">day variant</div>
+          <div class="row tight wrap">
+            <span class="pill accent">gym</span>
+            <span class="pill">home alt</span>
+            <span class="pill">park alt</span>
+            <button class="tiny">+ new</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="row spread" style="margin-bottom: 6px;">
+            <h4 style="margin: 0;">1. Warmup</h4>
+            <div class="row tight">
+              <button class="tiny">block type: linear</button>
+              <button class="tiny">⋮</button>
+            </div>
+          </div>
+          <div class="col tight">
+            <div class="card">
+              <div class="row spread" style="align-items: flex-start;">
+                <div>
+                  <div style="font-weight: 500;">World's greatest stretch</div>
+                  <div class="dim mono" style="font-size: 12px;">:5 each side &middot; 1 set</div>
+                </div>
+                <span class="dim">⋮</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="row spread" style="align-items: flex-start;">
+                <div>
+                  <div style="font-weight: 500;">Banded monster walks</div>
+                  <div class="dim mono" style="font-size: 12px;">:12 each direction &middot; 2 sets</div>
+                </div>
+                <span class="dim">⋮</span>
+              </div>
+            </div>
+            <button class="tiny">+ add exercise</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="row spread" style="margin-bottom: 6px;">
+            <h4 style="margin: 0;">2. Anchor</h4>
+            <div class="row tight">
+              <button class="tiny">block type: linear</button>
+              <button class="tiny">⋮</button>
+            </div>
+          </div>
+          <div class="col tight">
+            <div class="card" style="border-color: var(--text);">
+              <div class="row spread" style="align-items: flex-start;">
+                <div>
+                  <div style="font-weight: 500;">Smith machine BSS</div>
+                  <div class="dim mono" style="font-size: 12px;">50:8, 50:10, 50:12 &middot; ascending</div>
+                  <div class="muted" style="font-size: 11px; margin-top: 2px;">2 alts &middot; 4 cues</div>
+                </div>
+                <span class="dim">⋮</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="row spread" style="align-items: flex-start;">
+                <div>
+                  <div style="font-weight: 500;">Zercher squat</div>
+                  <div class="dim mono" style="font-size: 12px;">70:8 &middot; 3 sets</div>
+                </div>
+                <span class="dim">⋮</span>
+              </div>
+            </div>
+            <button class="tiny">+ add exercise</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="row spread" style="margin-bottom: 6px;">
+            <h4 style="margin: 0;">4. KB compound</h4>
+            <div class="row tight">
+              <button class="tiny" style="background: var(--accent-bg); color: var(--accent);">block type: circuit</button>
+              <button class="tiny">⋮</button>
+            </div>
+          </div>
+          <div class="row tight" style="margin-bottom: 6px;">
+            <span class="pill">3 rounds</span>
+            <span class="pill">90s rest</span>
+          </div>
+          <div class="col tight">
+            <div class="card"><div style="font-weight: 500;">KB clean to front squat</div><div class="dim mono" style="font-size: 12px;">:6</div></div>
+            <div class="card"><div style="font-weight: 500;">KB figure 8</div><div class="dim mono" style="font-size: 12px;">10 reps</div></div>
+            <div class="card"><div style="font-weight: 500;">Sprawl</div><div class="dim mono" style="font-size: 12px;">8 reps</div></div>
+            <button class="tiny">+ add to circuit</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <button class="full">+ new block</button>
+        </div>
+
+        <div class="section">
+          <div class="section-head">save scope</div>
+          <div class="col tight" style="font-size: 13px;">
+            <label class="row tight"><input type="radio" name="ts" checked style="width:auto;height:auto;margin:0;"> save changes to 9.2 (mutate)</label>
+            <label class="row tight"><input type="radio" name="ts" style="width:auto;height:auto;margin:0;"> fork to 9.3 (preserve 9.2)</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 32px;">Add exercise (search)</h3>
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span class="title">Add exercise</span>
+          <span class="muted">cancel</span>
+        </div>
+        <div class="section">
+          <input placeholder="search the library..." value="bss" />
+          <div class="row tight wrap" style="margin-top: 8px;">
+            <span class="pill">lunge</span>
+            <span class="pill">squat</span>
+            <span class="pill">smith</span>
+            <span class="pill">unilateral</span>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head">matches (5)</div>
+          <div class="col tight">
+            <div class="card">
+              <div class="row spread"><div><div style="font-weight: 500;">Smith machine BSS <span class="muted">parent</span></div><div class="dim" style="font-size: 12px;">7 sessions</div></div><span class="pill accent">add</span></div>
+            </div>
+            <div class="card" style="margin-left: 14px;">
+              <div class="row spread"><div><div style="font-weight: 500;">Tempo BSS with DBs <span class="muted">variation</span></div><div class="dim" style="font-size: 12px;">3 sessions</div></div><span class="pill">add</span></div>
+            </div>
+            <div class="card" style="margin-left: 14px;">
+              <div class="row spread"><div><div style="font-weight: 500;">DB reverse lunge with pause <span class="muted">variation</span></div><div class="dim" style="font-size: 12px;">2 sessions</div></div><span class="pill">add</span></div>
+            </div>
+            <div class="card">
+              <div class="row spread"><div><div style="font-weight: 500;">B-stance RDL</div><div class="dim" style="font-size: 12px;">12 sessions</div></div><span class="pill">add</span></div>
+            </div>
+            <div class="card">
+              <div class="row spread"><div><div style="font-weight: 500;">+ new exercise "bss"</div><div class="dim" style="font-size: 12px;">create from scratch</div></div><span class="pill">create</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

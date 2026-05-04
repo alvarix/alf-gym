@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym mockup v2 (P1 MVP)</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <main class="frame" style="max-width: 720px;">
+    <h1>alf-gym &middot; mockup v2</h1>
+    <p class="muted">Phase 1 MVP. 10 views. Compare with <a href="../mockup-v1/index.html">v1</a>.</p>
+
+    <h3 style="margin-top: 24px;">P1 views</h3>
+    <div class="nav-grid">
+      <a href="views/home.html"><div class="name">Home</div><div class="desc">Today, recent sessions, start</div></a>
+      <a href="views/day-picker.html"><div class="name">Day picker</div><div class="desc">Day, then Day Variant</div></a>
+      <a href="views/session-list.html"><div class="name">Session list</div><div class="desc">2.1 numbering, prefill+increments</div></a>
+      <a href="views/exercise-detail.html"><div class="name">Exercise detail</div><div class="desc">Cues, alts, branch variation</div></a>
+      <a href="views/history-overview.html"><div class="name">History overview</div><div class="desc">Filter UI shown</div></a>
+      <a href="views/history-day.html"><div class="name">History day</div><div class="desc">Single session detail, delete</div></a>
+      <a href="views/history-exercise.html"><div class="name">History per exercise</div><div class="desc">Chart, variations of BSS</div></a>
+      <a href="views/templates-list.html"><div class="name">Templates list</div><div class="desc">Programs and variants</div></a>
+      <a href="views/template-builder.html"><div class="name">Template builder</div><div class="desc">Day + Block levels</div></a>
+      <a href="views/settings.html"><div class="name">Settings</div><div class="desc">Units, defaults, inline export</div></a>
+    </div>
+
+    <h3 style="margin-top: 24px;">Deferred (see SPEC section 9)</h3>
+    <p class="muted" style="font-size: 13px;">
+      <strong>P2:</strong> session-focus, circuit-block, variant-tree, sync detail, time goals in builder, history search, month/year charts.<br>
+      <strong>P3:</strong> importer (4 steps), quick-edit prompt, advanced search.<br>
+      <strong>P4:</strong> speech, photo/video, advanced diagnostics.
+    </p>
+
+    <p class="annotation" style="margin-top: 32px;">
+      Major changes vs v1: hierarchical 2.1 numbering, set entry uses prefill + chevron increments (1/5/10), per-exercise english/syntax toggle, speech and quick-edit removed from MVP, exercise hierarchy clarified (BSS is parent; Smith machine BSS is variation).
+    </p>
+  </main>
+</body>
+</html>

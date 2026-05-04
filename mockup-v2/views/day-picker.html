@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym v2 - day picker</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>Day picker</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      Pick Day, then Day Variant. Single screen, two sections. "+ new day variant" opens Template Builder pre-scoped to a fresh variant.
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span class="title">Start session</span>
+          <span class="muted">cancel</span>
+        </div>
+
+        <div class="section" style="padding: 10px 14px;">
+          <div class="row spread">
+            <div>
+              <div class="section-head" style="margin: 0;">program / variant</div>
+              <div style="font-weight: 500; margin-top: 2px;">Workout 9 / 9.2</div>
+              <div class="muted" style="font-size: 12px;">cycle 4</div>
+            </div>
+            <button class="tiny">change</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">day</div>
+          <div class="col tight">
+            <label class="card" style="cursor: pointer; border-color: var(--text);">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Day A &middot; Front</div>
+                  <div class="muted" style="font-size: 12px;">last 4/27</div>
+                </div>
+                <input type="radio" name="day" checked style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Day B &middot; Back</div>
+                  <div class="muted" style="font-size: 12px;">last 4/22</div>
+                </div>
+                <input type="radio" name="day" style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Day C &middot; Skills + Diagnostics</div>
+                  <div class="muted" style="font-size: 12px;">last 4/24</div>
+                </div>
+                <input type="radio" name="day" style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">day variant for Day A</div>
+          <div class="col tight">
+            <label class="card" style="cursor: pointer; border-color: var(--text);">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">gym (canonical)</div>
+                  <div class="muted" style="font-size: 12px;">smith, cables, full kit</div>
+                </div>
+                <input type="radio" name="dv" checked style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">home alt</div>
+                  <div class="muted" style="font-size: 12px;">DBs, bands, sled</div>
+                </div>
+                <input type="radio" name="dv" style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">park alt</div>
+                  <div class="muted" style="font-size: 12px;">bodyweight only</div>
+                </div>
+                <input type="radio" name="dv" style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+            <a href="template-builder.html"><button class="full">+ new day variant (opens template builder)</button></a>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">copy from</div>
+          <div class="col tight" style="font-size: 13px;">
+            <label class="row tight"><input type="radio" name="copy" checked style="width:auto;height:auto;margin:0;"> last same day-variant (4/27)</label>
+            <label class="row tight"><input type="radio" name="copy" style="width:auto;height:auto;margin:0;"> last 9.2 Day A any env</label>
+            <label class="row tight"><input type="radio" name="copy" style="width:auto;height:auto;margin:0;"> blank scaffold from template</label>
+          </div>
+        </div>
+
+        <div class="section">
+          <a href="session-list.html"><button class="full primary">start Day A &middot; gym</button></a>
+        </div>
+      </div>
+    </div>
+
+    <p class="annotation">
+      <strong>"+ new day variant"</strong> is the template creator: opens Template Builder scoped to a new Day Variant under Day A. Useful when you have a recurring new context (e.g. "Day A - Hotel gym").
+    </p>
+  </main>
+</body>
+</html>

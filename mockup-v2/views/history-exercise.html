@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym v2 - history per exercise</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>History per exercise</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      Pivot on the parent exercise. All variations roll up into one chart and timeline. Quick access from anywhere via tap-on-name (P2 includes a global search).
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span class="title">BSS</span>
+          <span class="muted">⋮</span>
+        </div>
+
+        <div class="section">
+          <div class="row tight wrap">
+            <span class="pill accent">parent exercise</span>
+            <span class="pill">unilateral L-first</span>
+            <span class="pill">14 sessions across 4 variations</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="row spread" style="margin-bottom: 6px;">
+            <div class="section-head" style="margin: 0;">working set load (lb)</div>
+            <div class="tab-toggle">
+              <button>3 mo</button>
+              <button class="on">6 mo</button>
+              <button>1 yr</button>
+              <button>all</button>
+            </div>
+          </div>
+          <div class="chart-placeholder">
+            <div class="bar" style="height: 24%;"></div>
+            <div class="bar" style="height: 30%;"></div>
+            <div class="bar" style="height: 38%;"></div>
+            <div class="bar" style="height: 42%;"></div>
+            <div class="bar" style="height: 50%; opacity: 0.5;" title="alt"></div>
+            <div class="bar" style="height: 55%;"></div>
+            <div class="bar" style="height: 60%;"></div>
+            <div class="bar" style="height: 50%; opacity: 0.5;" title="alt"></div>
+            <div class="bar" style="height: 65%;"></div>
+            <div class="bar" style="height: 72%;"></div>
+            <div class="bar" style="height: 70%;"></div>
+            <div class="bar" style="height: 80%;"></div>
+            <div class="bar" style="height: 85%;"></div>
+            <div class="bar" style="height: 88%; background: var(--accent); opacity: 1;"></div>
+          </div>
+          <div class="row spread" style="font-size: 11px; color: var(--text-3); margin-top: 4px;">
+            <span>11/05</span><span>4/27</span>
+          </div>
+          <div class="row tight" style="font-size: 11px; margin-top: 4px;">
+            <span class="pill" style="background: var(--accent); color: white; font-size: 10px;">notable</span>
+            <span class="muted">faded bars are alt variations</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">variations included</div>
+          <div class="col tight">
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Smith machine BSS</div>
+                  <div class="muted" style="font-size: 12px;">7 sessions &middot; max 50!:12</div>
+                </div>
+                <input type="checkbox" checked style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Tempo BSS with DBs</div>
+                  <div class="muted" style="font-size: 12px;">3 sessions &middot; max 30!:10</div>
+                </div>
+                <input type="checkbox" checked style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Goblet squat with pulse</div>
+                  <div class="muted" style="font-size: 12px;">3 sessions, used as alt</div>
+                </div>
+                <input type="checkbox" style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">timeline</div>
+          <div class="col tight">
+            <div class="card">
+              <div class="row spread">
+                <div>
+                  <div><span class="mono">4/27</span> &middot; Smith machine BSS</div>
+                  <div class="dim mono" style="font-size: 12px;">50!:8 &middot; 50:10 &middot; 50:12</div>
+                </div>
+                <span class="pill" style="background: var(--accent); color: white; font-size: 10px;">notable</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="row spread">
+                <div>
+                  <div><span class="mono">4/16</span> &middot; Tempo BSS with DBs <span class="muted">alt</span></div>
+                  <div class="dim mono" style="font-size: 12px;">30!:10-3</div>
+                </div>
+                <span class="pill">home</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="row spread">
+                <div>
+                  <div><span class="mono">4/09</span> &middot; Smith machine BSS</div>
+                  <div class="dim mono" style="font-size: 12px;">45:8 &middot; 45:10 &middot; 45:12</div>
+                </div>
+                <span class="dim">›</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">pain associations</div>
+          <div class="muted" style="font-size: 13px;">2 of 14 sessions logged pain on this exercise. Most recent: <span class="pill danger">$2 L hip</span> on 4/27.</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="annotation">
+      <strong>"BSS"</strong> is the parent. Smith machine BSS, Tempo BSS with DBs, Goblet squat with pulse are all variations. The chart aggregates them; toggles narrow the view.
+      <br><strong>Notable bar</strong>: rendered with full opacity to spot first-time loads visually.
+    </p>
+  </main>
+</body>
+</html>

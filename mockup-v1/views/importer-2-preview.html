@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym - importer 2</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>Importer step 2: Parse preview</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      Color-coded tree: <span class="ok mono">green</span> parsed cleanly, <span class="warn mono">amber</span> best-guess, <span class="err mono">red</span> unknown. Confidence summary at top. You can accept clean+amber and only review red, or review every line.
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span class="title">Import &middot; step 2 / 4</span>
+          <span class="muted">help</span>
+        </div>
+
+        <div class="section">
+          <div class="row spread" style="margin-bottom: 8px;">
+            <div>
+              <div class="section-head" style="margin: 0;">parse confidence</div>
+              <div style="font-size: 13px;">28 lines &middot; <span class="ok">22 clean</span> &middot; <span class="warn">5 best-guess</span> &middot; <span class="err">1 unknown</span></div>
+            </div>
+            <div class="tab-toggle">
+              <button class="on">tree</button>
+              <button>raw</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="tree">
+            <div class="ok">▾ session 04/27/26 1015-1155 (100m)</div>
+            <div><span class="indent"></span><span class="ok">▾ Day A - Front</span></div>
+            <div><span class="indent"></span><span class="indent"></span><span class="ok">▾ block 2 Anchor (linear)</span></div>
+            <div><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="ok">▸ Smith machine BSS</span></div>
+            <div><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="ok">set 1: 50!:8</span></div>
+            <div><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="ok">set 2: 50:10</span></div>
+            <div><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="ok">set 3: 50:12</span></div>
+            <div><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="ok">pain $2 L hip</span></div>
+            <div><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="ok">▸ Zercher squat</span></div>
+            <div><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="warn">"70:8-3" interpreted as 70 lb x 8, 3 sets — confirm side scheme</span></div>
+            <div><span class="indent"></span><span class="indent"></span><span class="warn">▸ block 3 ??? (no header)</span></div>
+            <div><span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="warn">"^15:10-2" — cable IR/ER context unknown</span></div>
+            <div><span class="indent"></span><span class="indent"></span><span class="err">! "Cable shoulder IR, ER :10-2" — could not match exercise</span></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">conflicts with existing data</div>
+          <div class="card" style="background: var(--warning-bg); border-color: transparent; color: var(--warning);">
+            <div style="font-weight: 500;">Session 04/27/26 already exists</div>
+            <div style="font-size: 12px; margin-top: 2px;">Choose: replace, merge, or skip in step 4.</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="row" style="gap: 8px;">
+            <button class="grow">back</button>
+            <button class="grow">accept clean only</button>
+            <button class="grow primary">review &rarr;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="annotation">
+      <strong>Accept clean only</strong> jumps directly to step 4 with all <span class="ok mono">green</span> lines. Amber lines become raw notes on the parent.
+      <br><strong>Review</strong> opens step 3 to triage amber + red lines one at a time.
+    </p>
+  </main>
+</body>
+</html>

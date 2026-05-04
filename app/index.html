@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym - Template Builder</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    body { background: var(--bg); }
+    .app { max-width: 720px; margin: 0 auto; padding: 16px; }
+    .menubar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 0.5px solid var(--border); gap: 12px; }
+    .menubar .title { font-weight: 500; font-size: 18px; }
+    .crumbs { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+    .crumbs a { cursor: pointer; }
+    .crumbs .sep { color: var(--text-3); margin: 0 4px; }
+    .syn-toggle { display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 2px; font-size: 12px; }
+    .syn-toggle button { border: 0; background: transparent; padding: 4px 10px; border-radius: 999px; color: var(--text-2); }
+    .syn-toggle button.on { background: var(--surface); color: var(--text); font-weight: 500; }
+    .ix-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--r-md); padding: 10px 12px; margin-bottom: 8px; }
+    .ix-card.alt { background: var(--surface-2); }
+    .ix-card.editing { border-color: var(--text); }
+    .ix-card.draft { border-style: dashed; background: var(--surface-2); }
+    .ix-card .title { font-weight: 500; font-size: 14px; }
+    .ix-card .meta { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+    .ix-card .actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .ix-card .actions button { font-size: 11px; padding: 3px 6px; }
+    .group-head { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); margin: 12px 0 6px; }
+    .empty-state { background: var(--surface); border: 0.5px dashed var(--border-2); border-radius: var(--r-md); padding: 16px; text-align: center; margin: 8px 0; }
+    .empty-state .text { color: var(--text-2); font-size: 13px; margin-bottom: 10px; }
+    .next-step { display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin: 8px 0 12px; background: var(--accent-bg); color: var(--accent); border-radius: var(--r-md); font-size: 13px; }
+    .next-step .arrow { font-weight: 500; }
+    .wizard-text { font-size: 13px; color: var(--text-2); line-height: 1.6; padding: 14px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--r-md); margin-top: 16px; }
+    .wizard-text strong { font-weight: 500; color: var(--text); }
+    .wizard-text ol { padding-left: 20px; margin: 6px 0; }
+    .form-row { display: grid; grid-template-columns: 100px 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .form-row label { font-size: 13px; color: var(--text-2); }
+    .json-dump { background: var(--surface-2); border-radius: var(--r-md); padding: 12px; font-family: var(--mono); font-size: 11px; max-height: 360px; overflow: auto; white-space: pre; }
+    .flash { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--surface); padding: 8px 14px; border-radius: var(--r-md); font-size: 13px; z-index: 100; }
+    .new-btn { background: var(--accent-bg); color: var(--accent); border-color: transparent; font-weight: 500; }
+    .new-btn:hover { background: var(--accent); color: white; }
+    .inline-form { background: var(--surface-2); margin: -10px -12px 0; padding: 12px; border-top: 0.5px solid var(--border); border-radius: 0 0 var(--r-md) var(--r-md); }
+    .inline-form-head { font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+    .pill-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-family: var(--mono); }
+    .pill-tag.archived { background: var(--surface-2); color: var(--text-3); }
+    .archived-row { opacity: 0.6; }
+  </style>
+</head>
+<body>
+<div class="app" x-data="alfApp()" x-init="init()" x-cloak>
+
+  <!-- Menubar -->
+  <div class="menubar">
+    <div style="min-width: 0;">
+      <div class="title">alf-gym &middot; Template Builder</div>
+      <div class="crumbs">
+        <a @click="gotoHash('#/')">Programs</a>
+        <template x-if="view === 'wizard'">
+          <span><span class="sep">›</span><span>new program</span></span>
+        </template>
+        <template x-if="view === 'variant' || view === 'day' || view === 'block'">
+          <span><span class="sep">›</span><a @click="gotoHash('#/v/' + activeVariantId)" x-text="(activeProgram() ? activeProgram().name : '?') + ' / ' + (activeVariant() ? activeVariant().name : '?')"></a></span>
+        </template>
+        <template x-if="view === 'day' || view === 'block'">
+          <span><span class="sep">›</span><a @click="gotoHash('#/v/' + activeVariantId + '/d/' + activeDayId)" x-text="activeDay() ? activeDay().name : ''"></a></span>
+        </template>
+        <template x-if="view === 'block'">
+          <span><span class="sep">›</span><span x-text="activeBlock() ? activeBlock().name : ''"></span></span>
+        </template>
+      </div>
+    </div>
+    <div class="row tight">
+      <div class="syn-toggle" title="App-wide syntax / english">
+        <button :class="!syntax ? 'on' : ''" @click="setSyntax(false)">en</button>
+        <button :class="syntax ? 'on' : ''" @click="setSyntax(true)">syn</button>
+      </div>
+      <button class="tiny" @click="showJson = !showJson">json</button>
+    </div>
+  </div>
+
+  <!-- JSON / debug panel -->
+  <div x-show="showJson" class="ix-card" style="margin-bottom: 16px;">
+    <div class="row spread" style="margin-bottom: 8px;">
+      <strong style="font-weight: 500;">JSON snapshot</strong>
+      <div class="row tight">
+        <button class="tiny" @click="navigator.clipboard.writeText(JSON.stringify({programs, variants, days, blocks, prescriptions, exercises}, null, 2)); showFlash('Copied JSON')">copy</button>
+        <button class="tiny" @click="resetEverything()" style="color: var(--danger);">reset DB</button>
+        <button class="tiny" @click="showJson = false">close</button>
+      </div>
+    </div>
+    <div class="json-dump" x-text="JSON.stringify({programs, variants, days, blocks, prescriptions, exercises, _hash: window.location.hash}, null, 2)"></div>
+  </div>
+
+  <!-- Next step strip -->
+  <template x-if="nextStepHint() && view !== 'wizard'">
+    <div class="next-step">
+      <span class="arrow">→</span>
+      <span x-text="nextStepHint().text"></span>
+    </div>
+  </template>
+
+  <!-- Programs list -->
+  <div x-show="view === 'programs'">
+    <div class="row spread" style="margin-bottom: 8px;">
+      <h2 style="margin: 0;">Programs</h2>
+      <button class="new-btn" @click="gotoHash('#/wizard')">+ new program</button>
+    </div>
+
+    <template x-if="visiblePrograms().length === 0 && archivedCount() === 0">
+      <div class="empty-state">
+        <div class="text">No programs yet. Start by creating one.</div>
+        <button class="primary" @click="gotoHash('#/wizard')">+ new program</button>
+      </div>
+    </template>
+
+    <template x-for="p in visiblePrograms()" :key="p.id">
+      <div class="ix-card" :class="p.status === 'archived' ? 'archived-row' : ''">
+        <div class="row spread">
+          <div @click="gotoHash('#/p/' + p.id)" style="cursor: pointer; flex: 1;">
+            <div class="title">
+              <span x-text="p.name"></span>
+              <template x-if="p.status === 'archived'">
+                <span class="pill-tag archived">archived</span>
+              </template>
+            </div>
+            <div class="meta"><span x-text="p.status"></span></div>
+          </div>
+          <div class="actions">
+            <template x-if="p.status === 'archived'">
+              <button @click="unarchiveProgram(p)" title="restore">↺</button>
+            </template>
+            <template x-if="p.status !== 'archived'">
+              <button @click="archiveProgram(p)" title="archive">⌽</button>
+            </template>
+            <button @click="gotoHash('#/p/' + p.id)">open</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <div class="row spread" style="margin-top: 16px; font-size: 12px; color: var(--text-2);">
+      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <input type="checkbox" x-model="showArchived" style="width: auto; height: auto; margin: 0;" />
+        <span>show archived</span>
+        <span class="dim" x-show="archivedCount() > 0" x-text="'(' + archivedCount() + ')'"></span>
+      </label>
+    </div>
+
+    <div class="wizard-text">
+      <strong>Where you are:</strong> Programs is the top of the hierarchy. A Program ("Workout 9") is a training block that runs for several cycles before you redesign it. Old programs can be archived, not deleted.
+      <ol>
+        <li>Tap <strong>+ new program</strong> to launch the wizard.</li>
+        <li>Tap a program to jump into its current variant.</li>
+        <li>Toggle <strong>show archived</strong> to refer back to past programs.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Wizard -->
+  <div x-show="view === 'wizard'">
+    <h2>New program wizard</h2>
+    <template x-if="wizard">
+      <div>
+        <div class="ix-card" x-show="wizard.step === 1">
+          <div class="inline-form-head">Step 1 of 2: name it</div>
+          <div class="form-row">
+            <label>program</label>
+            <input x-model="wizard.programName" placeholder="Workout 10" />
+          </div>
+          <div class="form-row">
+            <label>first variant</label>
+            <input x-model="wizard.variantName" placeholder="10.1" />
+          </div>
+          <div class="muted" style="font-size: 12px;">A Program holds Variants (10, 10.1, 10.2). Each Variant holds Days.</div>
+          <div class="row" style="gap: 8px; margin-top: 12px;">
+            <button class="grow" @click="cancelWizard()">cancel</button>
+            <button class="grow primary" @click="wizard.step = 2">next</button>
+          </div>
+        </div>
+
+        <div class="ix-card" x-show="wizard.step === 2">
+          <div class="inline-form-head">Step 2 of 2: pick Days</div>
+          <div class="muted" style="font-size: 12px; margin-bottom: 8px;">Each Day is pre-filled with a skeleton of empty blocks based on movement patterns. You add the actual exercises later.</div>
+          <div class="col tight">
+            <template x-for="key in ['A','B','C']" :key="key">
+              <label class="ix-card alt" style="cursor: pointer; margin-bottom: 4px;">
+                <div class="row spread">
+                  <div>
+                    <div style="font-weight: 500;">Day <span x-text="key"></span></div>
+                    <div class="muted mono" style="font-size: 11px;" x-text="(window.DAY_SKELETONS[key] || []).join(' · ')"></div>
+                  </div>
+                  <input type="checkbox" :value="key" :checked="wizard.dayKeys.includes(key)"
+                    @change="wizard.dayKeys = $event.target.checked ? [...new Set([...wizard.dayKeys, key])] : wizard.dayKeys.filter(k => k !== key)"
+                    style="width: auto; height: auto; margin: 0;" />
+                </div>
+              </label>
+            </template>
+          </div>
+          <div class="form-row" style="margin-top: 8px;">
+            <label>skeleton</label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+              <input type="checkbox" x-model="wizard.useSkeleton" style="width: auto; height: auto; margin: 0;" />
+              pre-fill blocks based on movement patterns
+            </label>
+          </div>
+          <div class="row" style="gap: 8px; margin-top: 12px;">
+            <button class="grow" @click="wizard.step = 1">back</button>
+            <button class="grow primary" @click="submitWizard()">create program</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <div class="wizard-text">
+      <strong>What this creates:</strong> a Program, one Variant, the Days you ticked, and (with skeleton on) blocks named after movement patterns. Blocks start empty so you can add exercises into them next.
+    </div>
+  </div>
+
+  <!-- Variant view (Days list) -->
+  <div x-show="view === 'variant'">
+    <div class="row spread" style="margin-bottom: 8px;">
+      <h2 style="margin: 0;" x-text="activeVariant() ? activeVariant().name : ''"></h2>
+      <button class="new-btn" @click="openDraftDay()" x-show="!draftDay">+ day</button>
+    </div>
+
+    <template x-if="days.length === 0 && !draftDay">
+      <div class="empty-state">
+        <div class="text">No days in this variant yet.</div>
+        <button class="primary" @click="openDraftDay()">+ add a day</button>
+      </div>
+    </template>
+
+    <template x-for="[key, group] in daysGrouped()" :key="key">
+      <div>
+        <div class="group-head">Day <span x-text="key"></span></div>
+        <template x-for="d in group" :key="d.id">
+          <div class="ix-card" :class="d.isAlt ? 'alt' : ''">
+            <div class="row spread">
+              <div @click="gotoHash('#/v/' + activeVariantId + '/d/' + d.id)" style="cursor: pointer; flex: 1; min-width: 0;">
+                <div class="title" x-text="d.name"></div>
+                <div class="meta">
+                  <span x-show="d.isAlt">alt &middot; </span>
+                  <span x-show="d._blockCount > 0" x-text="d._blockCount + ' blocks · ' + d._blockPreview"></span>
+                  <span x-show="d._blockCount === 0" class="dim">empty &middot; tap to design</span>
+                </div>
+              </div>
+              <div class="actions">
+                <button @click="moveDay(d, -1)" title="up">↑</button>
+                <button @click="moveDay(d, 1)" title="down">↓</button>
+                <button @click="gotoHash('#/v/' + activeVariantId + '/d/' + d.id)">edit</button>
+                <button @click="deleteDay(d)" title="delete">×</button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <!-- Inline draft day -->
+    <div x-show="draftDay" class="ix-card draft">
+      <div class="inline-form-head">Add day</div>
+      <template x-if="draftDay">
+        <div>
+          <div class="form-row">
+            <label>group</label>
+            <select x-model="draftDay.groupKey">
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>name</label>
+            <input x-model="draftDay.name" :placeholder="'Day ' + draftDay.groupKey + (draftDay.isAlt ? ' alt' : ' - Front/Back/...')" />
+          </div>
+          <div class="form-row">
+            <label>alt?</label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+              <input type="checkbox" x-model="draftDay.isAlt" style="width: auto; height: auto; margin: 0;" />
+              this is an alt (e.g. home version)
+            </label>
+          </div>
+          <div class="form-row">
+            <label>skeleton</label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+              <input type="checkbox" x-model="draftDay.useSkeleton" :disabled="draftDay.isAlt" style="width: auto; height: auto; margin: 0;" />
+              pre-fill blocks (only for non-alt days)
+            </label>
+          </div>
+          <div class="row" style="gap: 8px; margin-top: 8px;">
+            <button class="grow" @click="cancelDraftDay()">cancel</button>
+            <button class="grow primary" @click="saveDraftDay()">add day</button>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div class="wizard-text">
+      <strong>Where you are:</strong> the Variant's Days. Day A, Day B, Day C, plus alts (Day A alt - home) as siblings.
+      <ol>
+        <li>Tap a Day to open its blocks.</li>
+        <li>Empty Days say <span class="dim">empty &middot; tap to design</span>. Use them to practice.</li>
+        <li>Use <span class="kbd">↑</span> <span class="kbd">↓</span> to reorder.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Day view (Blocks) -->
+  <div x-show="view === 'day'">
+    <div class="row spread" style="margin-bottom: 8px;">
+      <h2 style="margin: 0;" x-text="activeDay() ? activeDay().name : ''"></h2>
+      <button class="new-btn" @click="openDraftBlock()" x-show="!draftBlock">+ block</button>
+    </div>
+
+    <template x-if="blocks.length === 0 && !draftBlock">
+      <div class="empty-state">
+        <div class="text">No blocks yet. A block is a grouped section like Warmup, Squat, or Pull.</div>
+        <button class="primary" @click="openDraftBlock()">+ first block</button>
+      </div>
+    </template>
+
+    <template x-for="(b, i) in blocks" :key="b.id">
+      <div class="ix-card">
+        <div class="row spread">
+          <div @click="gotoHash('#/v/' + activeVariantId + '/d/' + activeDayId + '/b/' + b.id)" style="cursor: pointer; flex: 1; min-width: 0;">
+            <div class="title">
+              <span class="mono dim" x-text="(i+1) + '.'"></span>
+              <span x-text="b.name"></span>
+              <span class="pill" :class="b.type === 'circuit' ? 'accent' : ''" style="font-size: 10px; margin-left: 6px;">
+                <span x-text="b.type"></span>
+                <template x-if="b.type === 'circuit'">
+                  <span> &middot; <span x-text="b.rounds"></span> rounds</span>
+                </template>
+              </span>
+            </div>
+            <div class="meta">
+              <span x-text="(b._exCount || 0) + ' exercise' + (b._exCount === 1 ? '' : 's')"></span>
+              <template x-if="b.type === 'circuit'">
+                <span> &middot; rest <span x-text="b.restBetweenRoundsSec"></span>s</span>
+              </template>
+            </div>
+          </div>
+          <div class="actions">
+            <button @click="moveBlock(b, -1)">↑</button>
+            <button @click="moveBlock(b, 1)">↓</button>
+            <button @click="toggleBlockType(b)" title="toggle linear/circuit">⇄</button>
+            <button @click="deleteBlock(b)">×</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Inline draft block -->
+    <div x-show="draftBlock" class="ix-card draft">
+      <div class="inline-form-head">Add block</div>
+      <template x-if="draftBlock">
+        <div>
+          <div class="form-row">
+            <label>name</label>
+            <input x-model="draftBlock.name" placeholder="Warmup, Squat, Pull, ..." />
+          </div>
+          <div class="form-row">
+            <label>type</label>
+            <select x-model="draftBlock.type">
+              <option value="linear">linear</option>
+              <option value="circuit">circuit</option>
+            </select>
+          </div>
+          <div x-show="draftBlock.type === 'circuit'">
+            <div class="form-row">
+              <label>rounds</label>
+              <input type="number" x-model.number="draftBlock.rounds" min="1" />
+            </div>
+            <div class="form-row">
+              <label>rest (sec)</label>
+              <input type="number" x-model.number="draftBlock.restBetweenRoundsSec" min="0" />
+            </div>
+          </div>
+          <div class="row" style="gap: 8px; margin-top: 8px;">
+            <button class="grow" @click="cancelDraftBlock()">cancel</button>
+            <button class="grow primary" @click="saveDraftBlock()">add block</button>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div class="wizard-text">
+      <strong>Where you are:</strong> blocks of one Day. Each block is a movement pattern (Warmup, Squat, Pull, etc.) and runs as <span class="kbd">linear</span> or <span class="kbd">circuit</span>.
+      <ol>
+        <li>Tap a block to add or edit exercises inside.</li>
+        <li>Use <span class="kbd">⇄</span> to flip linear ↔ circuit.</li>
+        <li>Reorder with <span class="kbd">↑</span> <span class="kbd">↓</span>.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Block view (Exercises) -->
+  <div x-show="view === 'block'">
+    <div class="row spread" style="margin-bottom: 8px;">
+      <h2 style="margin: 0;" x-text="activeBlock() ? activeBlock().name : ''"></h2>
+      <button class="new-btn" @click="openAddExercise()" x-show="!editing">+ exercise</button>
+    </div>
+    <p class="muted" style="font-size: 12px;">
+      <template x-if="activeBlock() && activeBlock().type === 'circuit'">
+        <span>circuit &middot; <span x-text="activeBlock().rounds"></span> rounds &middot; <span x-text="activeBlock().restBetweenRoundsSec"></span>s rest between</span>
+      </template>
+      <template x-if="activeBlock() && activeBlock().type === 'linear'">
+        <span>linear block</span>
+      </template>
+    </p>
+
+    <template x-if="prescriptions.length === 0 && !(editing && !editing.id)">
+      <div class="empty-state">
+        <div class="text">No exercises yet. Add the first one.</div>
+        <button class="primary" @click="openAddExercise()">+ exercise</button>
+      </div>
+    </template>
+
+    <template x-for="(p, i) in prescriptions" :key="p.id">
+      <div class="ix-card" :class="editing && editing.id === p.id ? 'editing' : ''">
+        <!-- normal row -->
+        <div class="row spread" x-show="!(editing && editing.id === p.id)">
+          <div style="flex: 1; min-width: 0;">
+            <div class="title">
+              <span class="mono dim" x-text="(blocks.findIndex(b => b.id === activeBlockId) + 1) + '.' + (i+1)"></span>
+              <span x-text="exerciseName(p.exerciseId)"></span>
+            </div>
+            <div class="meta mono" x-text="formatPrescription(p)"></div>
+            <div class="meta" x-show="p.notes" x-text="p.notes" style="margin-top: 4px; font-style: italic;"></div>
+          </div>
+          <div class="actions">
+            <button @click="moveExercise(p, -1)">↑</button>
+            <button @click="moveExercise(p, 1)">↓</button>
+            <button @click="editExercise(p)">edit</button>
+            <button @click="deleteExercise(p)">×</button>
+          </div>
+        </div>
+        <!-- inline edit form -->
+        <div x-show="editing && editing.id === p.id" class="inline-form">
+          <div class="inline-form-head">Edit exercise</div>
+          <template x-if="editing && editing.id === p.id">
+            <div x-data>
+              <div class="form-row">
+                <label>exercise</label>
+                <div>
+                  <input list="exercise-list" x-model="editing.exerciseQuery" placeholder="type to search or add..." />
+                  <div class="muted" style="font-size: 11px;">unmatched names create a new exercise.</div>
+                </div>
+              </div>
+              <div class="form-row">
+                <label>side</label>
+                <select x-model="editing.fields.sideScheme">
+                  <option value="bilateral">bilateral</option>
+                  <option value="unilateral-L-first">unilateral, left first</option>
+                  <option value="unilateral-R-first">unilateral, right first</option>
+                  <option value="alternating">alternating</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>sets</label>
+                <input type="number" x-model.number="editing.fields.sets" min="1" />
+              </div>
+              <div class="form-row">
+                <label>reps</label>
+                <input x-model="editing.fields.reps" placeholder="8 or 8,10,12 or blank" />
+              </div>
+              <div class="form-row">
+                <label>hold (sec)</label>
+                <input type="number" x-model.number="editing.fields.holdSec" placeholder="optional" />
+              </div>
+              <div class="form-row">
+                <label>load (lb)</label>
+                <input x-model="editing.fields.load" placeholder="50 · 50,55,60 · ^15 · (35) · band" />
+              </div>
+              <div class="form-row">
+                <label>notable</label>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                  <input type="checkbox" x-model="editing.fields.notable" style="width: auto; height: auto; margin: 0;" />
+                  first time at this load (renders <span class="mono">!</span>)
+                </label>
+              </div>
+              <div class="form-row">
+                <label>notes</label>
+                <input x-model="editing.fields.notes" placeholder="optional" />
+              </div>
+              <div class="row" style="gap: 8px; margin-top: 8px;">
+                <button class="grow" @click="cancelEdit()">cancel</button>
+                <button class="grow primary" @click="saveEdit()">save</button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <!-- Inline draft (new exercise) -->
+    <div x-show="editing && !editing.id" class="ix-card draft">
+      <div class="inline-form-head">Add exercise</div>
+      <template x-if="editing && !editing.id">
+        <div>
+          <div class="form-row">
+            <label>exercise</label>
+            <div>
+              <input list="exercise-list" x-model="editing.exerciseQuery" placeholder="type to search or add..." autofocus />
+              <div class="muted" style="font-size: 11px;">unmatched names create a new exercise.</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>side</label>
+            <select x-model="editing.fields.sideScheme">
+              <option value="bilateral">bilateral</option>
+              <option value="unilateral-L-first">unilateral, left first</option>
+              <option value="unilateral-R-first">unilateral, right first</option>
+              <option value="alternating">alternating</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>sets</label>
+            <input type="number" x-model.number="editing.fields.sets" min="1" />
+          </div>
+          <div class="form-row">
+            <label>reps</label>
+            <input x-model="editing.fields.reps" placeholder="8 or 8,10,12" />
+          </div>
+          <div class="form-row">
+            <label>hold (sec)</label>
+            <input type="number" x-model.number="editing.fields.holdSec" placeholder="optional" />
+          </div>
+          <div class="form-row">
+            <label>load (lb)</label>
+            <input x-model="editing.fields.load" placeholder="50 · 50,55,60 · ^15 · (35) · band" />
+          </div>
+          <div class="form-row">
+            <label>notable</label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+              <input type="checkbox" x-model="editing.fields.notable" style="width: auto; height: auto; margin: 0;" />
+              first time at this load (<span class="mono">!</span>)
+            </label>
+          </div>
+          <div class="form-row">
+            <label>notes</label>
+            <input x-model="editing.fields.notes" placeholder="optional" />
+          </div>
+          <div class="row" style="gap: 8px; margin-top: 8px;">
+            <button class="grow" @click="cancelEdit()">cancel</button>
+            <button class="grow primary" @click="saveEdit()">add exercise</button>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <datalist id="exercise-list">
+      <template x-for="e in exercises" :key="e.id">
+        <option :value="e.name"></option>
+      </template>
+    </datalist>
+
+    <div class="wizard-text">
+      <strong>Where you are:</strong> exercises inside one block. Each row is a target prescription: sets, reps, side, load.
+      <ol>
+        <li>Tap <strong>+ exercise</strong>. Type a name; existing names autocomplete, new names create a new exercise.</li>
+        <li>Set sets, reps, load. <span class="mono">^15</span> cable, <span class="mono">(35)</span> plate per side, <span class="mono">!</span> via the notable checkbox.</li>
+        <li>Save. The exercise appears numbered <span class="mono">{block}.{i}</span>.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Flash toast -->
+  <div x-show="flash" class="flash" x-text="flash"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dexie/3.2.4/dexie.min.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.0/cdn.min.js"></script>
+<style>[x-cloak] { display: none !important; }</style>
+</body>
+</html>

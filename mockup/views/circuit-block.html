@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym - circuit block</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>Circuit block</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      Circuits group exercises into rounds. Each row tracks completion per round. Round rest timer runs between rounds. Tap any exercise to record values for that round.
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span><span class="title">9.2</span> <span class="subtitle">Day B &middot; KB compound</span></span>
+          <span class="timer">52:08</span>
+        </div>
+
+        <div class="section" style="padding: 10px 14px;">
+          <div class="row spread">
+            <div>
+              <div class="row tight">
+                <span class="pill accent">circuit</span>
+                <span class="muted" style="font-size: 12px;">3 rounds &middot; 90s rest</span>
+              </div>
+              <div style="font-weight: 500; margin-top: 4px;">Round 2 of 3</div>
+            </div>
+            <button class="tiny">swap block</button>
+          </div>
+        </div>
+
+        <div class="section" style="padding: 12px 14px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+              <tr>
+                <th style="text-align: left; padding-bottom: 6px; color: var(--text-2); font-weight: 500;">exercise</th>
+                <th style="text-align: center; padding-bottom: 6px; color: var(--text-2); font-weight: 500; width: 40px;">R1</th>
+                <th style="text-align: center; padding-bottom: 6px; color: var(--text-2); font-weight: 500; width: 40px;">R2</th>
+                <th style="text-align: center; padding-bottom: 6px; color: var(--text-2); font-weight: 500; width: 40px;">R3</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding: 8px 0; border-top: 0.5px solid var(--border);">
+                  <div style="font-weight: 500;">KB clean to front squat</div>
+                  <div class="dim mono" style="font-size: 11px;">:6 &middot; 16 kg</div>
+                </td>
+                <td class="mono" style="text-align: center; color: var(--success);">&#10003;</td>
+                <td class="mono" style="text-align: center;"><div class="cell active" style="height: 28px; padding: 0 4px;">tap</div></td>
+                <td class="mono" style="text-align: center; color: var(--text-3);">&middot;</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; border-top: 0.5px solid var(--border);">
+                  <div style="font-weight: 500;">KB figure 8</div>
+                  <div class="dim mono" style="font-size: 11px;">10 reps</div>
+                </td>
+                <td class="mono" style="text-align: center; color: var(--success);">&#10003;</td>
+                <td class="mono" style="text-align: center; color: var(--text-3);">&middot;</td>
+                <td class="mono" style="text-align: center; color: var(--text-3);">&middot;</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; border-top: 0.5px solid var(--border);">
+                  <div style="font-weight: 500;">Sprawl</div>
+                  <div class="dim mono" style="font-size: 11px;">8 reps</div>
+                </td>
+                <td class="mono" style="text-align: center; color: var(--success);">&#10003;</td>
+                <td class="mono" style="text-align: center; color: var(--text-3);">&middot;</td>
+                <td class="mono" style="text-align: center; color: var(--text-3);">&middot;</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section" style="padding: 12px 14px; background: var(--surface-2);">
+          <h4 style="margin-bottom: 6px;">Active: KB clean to front squat (R2)</h4>
+          <div class="muted mono" style="font-size: 12px; margin-bottom: 8px;">last R1: :6 @ 16 kg</div>
+          <div class="set-row">
+            <span class="lbl">R2</span>
+            <div class="cell active">16</div>
+            <div class="cell active">:6</div>
+            <div class="check"><span class="dim">&middot;</span></div>
+          </div>
+          <div class="row" style="margin-top: 8px; gap: 6px;">
+            <button class="tiny">+ ex</button>
+            <button class="tiny">drop ex</button>
+            <button class="tiny">$ pain</button>
+            <button class="tiny">note</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="row spread">
+            <div>
+              <div class="muted" style="font-size: 12px;">round rest</div>
+              <div class="mono" style="font-size: 22px; font-weight: 500;">01:24</div>
+            </div>
+            <div class="col tight" style="align-items: flex-end;">
+              <button class="tiny">skip rest</button>
+              <button class="tiny">+30s</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="fab">
+          <div class="mic"><span class="mono" style="font-size: 14px;">🎙</span></div>
+          <input placeholder="quick edit..." />
+          <button class="primary tiny">go</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="annotation">
+      <strong>Per-round tracking:</strong> each cell is one round of one exercise.
+      <br><strong>Rest timer</strong> between rounds counts down automatically when round completes.
+      <br><strong>Edits during a circuit:</strong> drop an exercise from the rotation, swap it, or extend rounds via quick-edit prompt.
+      <br><strong>Variable rep schemes:</strong> tap a cell to override prescribed reps for that specific round.
+    </p>
+  </main>
+</body>
+</html>

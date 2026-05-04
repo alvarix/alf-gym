@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym - export</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>Export</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      JSON for full backup. Markdown per session for human reading and Obsidian round-trip. Filtered by date, program, variant.
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span class="title">Export</span>
+          <span></span>
+        </div>
+
+        <div class="section">
+          <div class="section-head">format</div>
+          <div class="col tight">
+            <label class="card" style="cursor: pointer; border-color: var(--text);">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">JSON (full backup)</div>
+                  <div class="muted" style="font-size: 12px;">all entities, all fields, restorable via importer</div>
+                </div>
+                <input type="checkbox" checked style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer; border-color: var(--text);">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Markdown per session</div>
+                  <div class="muted" style="font-size: 12px;">human-readable, modern Workout 9.x notation</div>
+                </div>
+                <input type="checkbox" checked style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Markdown per variant</div>
+                  <div class="muted" style="font-size: 12px;">one .md per variant with all sessions appended</div>
+                </div>
+                <input type="checkbox" style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">CSV (sets only)</div>
+                  <div class="muted" style="font-size: 12px;">flat table of sets for spreadsheet analysis</div>
+                </div>
+                <input type="checkbox" style="width:auto;height:auto;margin:0;" />
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">scope</div>
+          <div class="col tight">
+            <div class="row spread">
+              <span>date range</span>
+              <select><option>all time</option><option>last 90 d</option><option>last 30 d</option><option>custom</option></select>
+            </div>
+            <div class="row spread">
+              <span>program</span>
+              <select><option>all</option><option>Workout 9</option><option>PRX</option></select>
+            </div>
+            <div class="row spread">
+              <span>include drafts</span>
+              <input type="checkbox" style="width:auto;height:auto;margin:0;" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">preview</div>
+          <pre class="card muted-bg mono" style="font-size: 12px; white-space: pre-wrap; line-height: 1.6;">04/27/26
+1015-1155
+gym
+
+# Day A - Front
+
+## 2. Anchor
+- [x] *Smith machine BSS*
+    50!:8,50:10,50:12
+    - $2 L hip
+- [x] *Zercher squat*
+    70:8-3
+</pre>
+        </div>
+
+        <div class="section">
+          <div class="row" style="gap: 8px;">
+            <button class="grow">copy text</button>
+            <button class="grow primary">download zip</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="annotation">
+      Markdown export aims to round-trip back through the importer cleanly. Filenames follow <span class="mono">YYYY-MM-DD &middot; Day [A|B|C] &middot; [variant] &middot; [env].md</span>.
+    </p>
+  </main>
+</body>
+</html>

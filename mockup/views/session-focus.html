@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym - session focus view</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>Session: focus view</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      Active exercise zoomed. Keypad permanent. Header strip shows progress and next exercise. Toggle back to list view from the header.
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span><span class="title">9.2</span> <span class="subtitle">A &middot; 5 / 15</span></span>
+          <span class="timer">47:22</span>
+        </div>
+
+        <div class="section" style="padding: 8px 14px;">
+          <div class="row spread">
+            <span class="muted" style="font-size: 12px;">Block 2 / 6 &middot; Anchor</span>
+            <div class="tab-toggle">
+              <button>list</button>
+              <button class="on">focus</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="padding: 14px;">
+          <div class="row spread" style="align-items: flex-start;">
+            <div>
+              <h3 style="margin-bottom: 2px;">Smith machine BSS</h3>
+              <div class="muted mono" style="font-size: 12px;">prescribed 50!:8 &middot; 50:10 &middot; 50:12</div>
+              <div class="dim mono" style="font-size: 11px; margin-top: 2px;">last 4/16 (alt): 30!:10-3</div>
+            </div>
+            <button class="tiny">swap</button>
+          </div>
+
+          <div style="margin-top: 14px;">
+            <div class="set-row">
+              <span class="lbl">Set 1</span>
+              <div class="cell done">50<span style="color: var(--accent);">!</span></div>
+              <div class="cell done">:8</div>
+              <div class="check"><span style="color: var(--success);">&#10003;</span></div>
+            </div>
+            <div class="set-row">
+              <span class="lbl">Set 2</span>
+              <div class="cell done">50</div>
+              <div class="cell done">:10</div>
+              <div class="check"><span style="color: var(--success);">&#10003;</span></div>
+            </div>
+            <div class="set-row">
+              <span class="lbl">Set 3</span>
+              <div class="cell active">50</div>
+              <div class="cell active">:12</div>
+              <div class="check"><span class="dim">&middot;</span></div>
+            </div>
+          </div>
+
+          <div class="row tight" style="margin-top: 8px;">
+            <span class="pill danger">$2 L hip</span>
+          </div>
+
+          <div class="row" style="margin-top: 10px; gap: 6px;">
+            <button class="tiny">+ set</button>
+            <button class="tiny">$ pain</button>
+            <button class="tiny">note</button>
+            <button class="tiny">cues</button>
+            <button class="tiny">repeat last</button>
+          </div>
+        </div>
+
+        <div class="pad">
+          <div class="display">
+            50<span style="color: var(--accent);">!</span> <span class="dim">&middot;</span> :12
+          </div>
+          <div class="pad-grid">
+            <button>1</button><button>2</button><button>3</button><button style="color: var(--accent);">!</button>
+            <button>4</button><button>5</button><button>6</button><button class="mono">^</button>
+            <button>7</button><button>8</button><button>9</button><button class="mono">(</button>
+            <button class="mono">.</button><button>0</button><button class="mono">⌫</button><button class="mono">:</button>
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            <button class="grow">reps →</button>
+            <button class="grow primary">log set</button>
+          </div>
+        </div>
+
+        <div class="section" style="padding: 10px 14px; background: var(--surface-2);">
+          <div class="row spread">
+            <span class="muted" style="font-size: 12px;">up next</span>
+            <span class="mono" style="font-size: 12px;">6. Zercher squat &middot; 70:8-3</span>
+          </div>
+        </div>
+
+        <div class="fab">
+          <div class="mic"><span class="mono" style="font-size: 14px;">🎙</span></div>
+          <input placeholder="quick edit..." />
+          <button class="primary tiny">go</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="annotation">
+      Keypad has weight tokens: <span class="kbd">!</span> notable load, <span class="kbd">^</span> cable stack, <span class="kbd">(</span> plate-per-side, <span class="kbd">:</span> per-side toggle, <span class="kbd">.</span> decimal.
+      <br>Pre-staged values mirror last set unless changed (so set 3 starts at 50 reps :12 because that's the prescribed plan).
+      <br><strong>Repeat last</strong> = one-tap commit of identical set.
+    </p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym v2 - home</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>Home</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      Default landing. Big start affordance, recent sessions, quick links to templates and variant tree.
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="title">alf-gym</span>
+          <span class="muted">⚙</span>
+        </div>
+
+        <div class="section">
+          <div class="muted" style="font-size: 12px;">Wed, 04/29</div>
+          <h3 style="margin-top: 4px;">No active session</h3>
+          <div class="muted" style="font-size: 13px; margin-bottom: 12px;">
+            "no active session" = nothing started today. Tap to start a fresh one.
+          </div>
+          <a href="day-picker.html"><button class="full primary">start session</button></a>
+          <div class="row" style="margin-top: 8px;">
+            <a href="templates-list.html" class="grow"><button class="full">templates</button></a>
+            <a href="#" class="grow"><button class="full">variant tree (P2)</button></a>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="row spread" style="margin-bottom: 8px;">
+            <div class="section-head" style="margin: 0;">recent sessions</div>
+            <a href="history-overview.html" style="font-size: 12px;">view all</a>
+          </div>
+          <a class="card" href="history-day.html" style="text-decoration: none; color: inherit; display: block;">
+            <div class="row spread">
+              <div>
+                <div><strong style="font-weight: 500;">4/27</strong> &middot; Day A &middot; 9.2</div>
+                <div class="muted" style="font-size: 12px;">100 min &middot; gym &middot; <span class="pill danger" style="font-size: 10px;">$2 L hip</span></div>
+              </div>
+              <button class="tiny" onclick="event.preventDefault(); event.stopPropagation();" title="copy this template into a new session">copy</button>
+            </div>
+          </a>
+          <a class="card" href="#" style="text-decoration: none; color: inherit; display: block;">
+            <div class="row spread">
+              <div>
+                <div><strong style="font-weight: 500;">4/24</strong> &middot; Day C &middot; 9.2</div>
+                <div class="muted" style="font-size: 12px;">55 min &middot; park</div>
+              </div>
+              <button class="tiny">copy</button>
+            </div>
+          </a>
+          <a class="card" href="#" style="text-decoration: none; color: inherit; display: block;">
+            <div class="row spread">
+              <div>
+                <div><strong style="font-weight: 500;">4/22</strong> &middot; Day B &middot; 9.2</div>
+                <div class="muted" style="font-size: 12px;">92 min &middot; gym</div>
+              </div>
+              <button class="tiny">copy</button>
+            </div>
+          </a>
+          <a class="card" href="#" style="text-decoration: none; color: inherit; display: block;">
+            <div class="row spread">
+              <div>
+                <div><strong style="font-weight: 500;">4/19</strong> &middot; Day A &middot; 9.2 <span class="muted">(home alt)</span></div>
+                <div class="muted" style="font-size: 12px;">110 min &middot; home</div>
+              </div>
+              <button class="tiny">copy</button>
+            </div>
+          </a>
+        </div>
+
+        <div class="section">
+          <div class="row spread" style="font-size: 12px; color: var(--text-2);">
+            <span>synced 12 min ago</span>
+            <a href="settings.html">settings</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="annotation">
+      <strong>"copy"</strong> on a recent session: starts a new session pre-filled with that session's day variant template, going straight into the list view. Saves a tap on Day picker when repeating yesterday's day.
+      <br>
+      <strong>"templates":</strong> opens the Templates list to browse programs and variants.
+      <br>
+      <strong>"variant tree":</strong> visual lineage. Deferred to P2; chip is greyed.
+    </p>
+  </main>
+</body>
+</html>

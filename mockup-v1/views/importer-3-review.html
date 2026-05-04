@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym - importer 3</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>Importer step 3: Per-line review</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      One line at a time. Yes / edit / skip. Edits open a small grammar editor. Skipped lines attach as raw notes on the parent. Resumable.
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span class="title">Import &middot; step 3 / 4</span>
+          <span class="muted">save draft</span>
+        </div>
+
+        <div class="section">
+          <div class="row spread">
+            <div class="section-head" style="margin: 0;">line 5 of 6</div>
+            <span class="muted mono" style="font-size: 12px;">5 amber, 1 red &middot; 4 left</span>
+          </div>
+          <div class="progress" style="height: 3px; background: var(--border); border-radius: 2px; margin-top: 6px;">
+            <div style="height: 100%; background: var(--accent); width: 67%; border-radius: 2px;"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">raw line</div>
+          <div class="card muted-bg mono" style="font-size: 13px; line-height: 1.6;">
+            "70:8-3"
+            <div class="dim" style="font-size: 11px; margin-top: 4px;">in: Smith machine BSS &middot; Zercher squat (block 2)</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">parser's best guess</div>
+          <div class="card" style="background: var(--warning-bg); border-color: transparent;">
+            <div class="warn" style="font-weight: 500;">70 lb &middot; 8 reps &middot; 3 sets &middot; bilateral</div>
+            <div class="muted" style="font-size: 12px; margin-top: 4px;">no <span class="mono">:</span> prefix detected, defaulted to bilateral. Side scheme on parent prescription is unilateral L-first.</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">grammar editor</div>
+          <div class="row tight wrap">
+            <input value="70" style="width: 70px; text-align: center;" />
+            <select style="width: 70px;"><option>lb</option><option>kg</option></select>
+            <select style="width: 90px;"><option>:8 each side</option><option>8 bilateral</option></select>
+            <input value="3" style="width: 50px; text-align: center;" />
+            <span class="muted" style="font-size: 12px;">sets</span>
+          </div>
+          <div class="muted mono" style="font-size: 12px; margin-top: 8px;">canonical: <strong style="font-weight: 500;">70:8-3</strong></div>
+        </div>
+
+        <div class="section">
+          <div class="row" style="gap: 6px;">
+            <button class="grow danger">skip line</button>
+            <button class="grow">save as note</button>
+            <button class="grow primary">apply &rarr;</button>
+          </div>
+        </div>
+
+        <div class="section" style="background: var(--surface-2); padding: 10px 14px;">
+          <div class="row spread" style="font-size: 12px;">
+            <span class="muted">3 lines applied so far</span>
+            <button class="tiny">view diff</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="annotation">
+      <strong>Save draft</strong> persists progress; come back later from Home.
+      <br><strong>Skip line</strong> drops the line entirely.
+      <br><strong>Save as note</strong> attaches the raw text to the parent prescription so the original verbatim survives even if not parsed.
+    </p>
+  </main>
+</body>
+</html>

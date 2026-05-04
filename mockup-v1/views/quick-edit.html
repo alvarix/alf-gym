@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym - quick edit</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>Quick edit prompt</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      Type or speak edits. Parser produces a structured diff. Pick the save scope: this session only, save to template, or save as new variant.
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span class="title">Quick edit</span>
+          <span class="muted">cancel</span>
+        </div>
+
+        <div class="section">
+          <div class="muted" style="font-size: 12px; margin-bottom: 6px;">your prompt</div>
+          <div class="card muted-bg mono" style="font-size: 13px;">
+            make anchor a superset of bss + zercher, then add band pull-aparts 2x15 to warmup
+          </div>
+          <div class="row tight" style="margin-top: 6px;">
+            <span class="pill accent">parsed</span>
+            <span class="dim" style="font-size: 11px;">2 ops detected</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">proposed changes</div>
+          <div class="diff-row modify">
+            <span class="op">modify</span>
+            <span>block 2 Anchor: linear &rarr; <strong>circuit, 3 rounds</strong>, contains BSS + Zercher</span>
+          </div>
+          <div class="diff-row add">
+            <span class="op">add</span>
+            <span>block 1 Warmup: + Band pull-aparts <span class="mono">:15-2</span></span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">save scope</div>
+          <div class="col tight">
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">This session only</div>
+                  <div class="muted" style="font-size: 12px;">Today's session diverges; template stays as 9.2</div>
+                </div>
+                <input type="radio" name="scope" checked style="width: auto; height: auto; margin: 0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Save to template (mutate 9.2)</div>
+                  <div class="muted" style="font-size: 12px;">Future sessions of 9.2 inherit these edits</div>
+                </div>
+                <input type="radio" name="scope" style="width: auto; height: auto; margin: 0;" />
+              </div>
+            </label>
+            <label class="card" style="cursor: pointer;">
+              <div class="row spread">
+                <div>
+                  <div style="font-weight: 500;">Save as new variant (9.3)</div>
+                  <div class="muted" style="font-size: 12px;">Forks 9.2; today's session uses the fork; 9.2 archived</div>
+                </div>
+                <input type="radio" name="scope" style="width: auto; height: auto; margin: 0;" />
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="row" style="gap: 8px;">
+            <button class="grow">edit prompt</button>
+            <button class="grow primary">apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="annotation" style="margin-top: 24px;">
+      <strong>Verb grammar (v1):</strong> <span class="kbd">swap</span> <span class="kbd">add</span> <span class="kbd">drop</span> <span class="kbd">replace</span> <span class="kbd">reorder</span> <span class="kbd">set</span> <span class="kbd">make</span>
+      <br><strong>Composition:</strong> chain ops with "and" or "then". Each clause becomes one diff row.
+      <br><strong>Ambiguity:</strong> if a referenced exercise matches multiple, the parser asks. If a block name doesn't match, parser suggests the closest.
+      <br><strong>Speech path:</strong> mic icon on the prompt opens speech-capture, transcript fills the prompt field.
+    </p>
+
+    <h3 style="margin-top: 32px;">More example prompts</h3>
+    <div class="phone" style="margin-top: 12px;">
+      <div class="screen">
+        <div class="section">
+          <div class="col tight" style="font-family: var(--mono); font-size: 13px;">
+            <div>swap zercher for goblet squat 3x10</div>
+            <div class="dim" style="font-size: 11px;">replaces prescription, keeps history link to Zercher's parent exercise</div>
+            <div class="divider"></div>
+            <div>drop calf pt today</div>
+            <div class="dim" style="font-size: 11px;">block 6 marked skipped this session only</div>
+            <div class="divider"></div>
+            <div>set bss to 50 lb 8/10/12</div>
+            <div class="dim" style="font-size: 11px;">updates prescription targets for active exercise</div>
+            <div class="divider"></div>
+            <div>add 2 min plank to cooldown</div>
+            <div class="dim" style="font-size: 11px;">creates Cooldown block if missing, then appends</div>
+            <div class="divider"></div>
+            <div>reorder anchor: zercher first then bss</div>
+            <div class="dim" style="font-size: 11px;">swaps prescription order in the active block</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alf-gym v2 - history overview</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="frame">
+    <a href="../index.html" class="back-link">all views</a>
+    <h2>History overview</h2>
+    <p class="annotation" style="margin: 0 0 12px;">
+      All sessions, filterable. Filter UI shown explicitly. Tap a row to open the day detail. Search ships in P2.
+    </p>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <span class="muted">‹</span>
+          <span class="title">History</span>
+          <span class="muted">⚙</span>
+        </div>
+
+        <div class="section">
+          <div class="section-head">filters</div>
+          <div class="col tight">
+            <div class="row spread">
+              <span style="font-size: 13px;">program</span>
+              <select style="width: 60%;"><option>Workout 9</option><option>all</option><option>PRX (imported)</option></select>
+            </div>
+            <div class="row spread">
+              <span style="font-size: 13px;">variant</span>
+              <select style="width: 60%;"><option>9.2</option><option>9.1</option><option>all</option></select>
+            </div>
+            <div class="row spread">
+              <span style="font-size: 13px;">day</span>
+              <div class="row tight">
+                <button class="tiny" style="background: var(--surface-2);">A</button>
+                <button class="tiny" style="background: var(--surface-2);">B</button>
+                <button class="tiny" style="background: var(--surface-2);">C</button>
+                <button class="tiny">all</button>
+              </div>
+            </div>
+            <div class="row spread">
+              <span style="font-size: 13px;">env</span>
+              <div class="row tight">
+                <button class="tiny" style="background: var(--surface-2);">gym</button>
+                <button class="tiny" style="background: var(--surface-2);">home</button>
+                <button class="tiny" style="background: var(--surface-2);">park</button>
+              </div>
+            </div>
+            <div class="row spread">
+              <span style="font-size: 13px;">date</span>
+              <select style="width: 60%;"><option>last 30 days</option><option>last 90 days</option><option>last 12 mo</option><option>all time</option><option>custom...</option></select>
+            </div>
+            <div class="row spread">
+              <span style="font-size: 13px;">pain only</span>
+              <input type="checkbox" style="width: auto; height: auto; margin: 0;" />
+            </div>
+          </div>
+          <div class="muted" style="font-size: 11px; margin-top: 6px;">search across notes is P2.</div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">april 2026 &middot; 5 sessions</div>
+          <div class="col tight">
+            <a class="card" href="history-day.html" style="text-decoration: none; color: inherit; display: block;">
+              <div class="row spread">
+                <div>
+                  <div><strong style="font-weight: 500;">04/27</strong> &middot; A &middot; 9.2</div>
+                  <div class="muted" style="font-size: 12px;">100 min &middot; gym &middot; 6 ex done</div>
+                </div>
+                <span class="pill danger" style="font-size: 10px;">$2 L hip</span>
+              </div>
+            </a>
+            <a class="card" href="history-day.html" style="text-decoration: none; color: inherit; display: block;">
+              <div class="row spread">
+                <div>
+                  <div><strong style="font-weight: 500;">04/24</strong> &middot; C &middot; 9.2</div>
+                  <div class="muted" style="font-size: 12px;">55 min &middot; park</div>
+                </div>
+                <span class="dim">›</span>
+              </div>
+            </a>
+            <a class="card" href="history-day.html" style="text-decoration: none; color: inherit; display: block;">
+              <div class="row spread">
+                <div>
+                  <div><strong style="font-weight: 500;">04/22</strong> &middot; B &middot; 9.2</div>
+                  <div class="muted" style="font-size: 12px;">92 min &middot; gym</div>
+                </div>
+                <span class="dim">›</span>
+              </div>
+            </a>
+            <a class="card" href="history-day.html" style="text-decoration: none; color: inherit; display: block;">
+              <div class="row spread">
+                <div>
+                  <div><strong style="font-weight: 500;">04/19</strong> &middot; A &middot; <span class="muted">home alt</span></div>
+                  <div class="muted" style="font-size: 12px;">110 min &middot; home</div>
+                </div>
+                <span class="dim">›</span>
+              </div>
+            </a>
+            <a class="card" href="history-day.html" style="text-decoration: none; color: inherit; display: block;">
+              <div class="row spread">
+                <div>
+                  <div><strong style="font-weight: 500;">04/16</strong> &middot; A &middot; <span class="muted">home alt</span></div>
+                  <div class="muted" style="font-size: 12px;">95 min &middot; home</div>
+                </div>
+                <span class="pill danger" style="font-size: 10px;">$2 L back</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">march 2026 &middot; 8 sessions</div>
+          <div class="muted" style="font-size: 13px;">tap to expand month</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="annotation">
+      <strong>Pain pill</strong> on the right of a row indicates the worst pain mark in that session.
+      <br><strong>Tap any session</strong> to open day detail (with delete).
+      <br><strong>Search</strong> by note text or exercise name moves to P2 once index strategy is decided.
+      <br><strong>Month/year aggregate charts</strong>: also P2.
+    </p>
+  </main>
+</body>
+</html>
