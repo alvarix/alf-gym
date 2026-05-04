@@ -4,37 +4,44 @@ A mobile-first PWA for tracking gym sessions. Offline-first, fast capture, histo
 
 ## Status
 
-Pre-build. Spec and HTML mockup phase. Phased plan (P1-P4) in `SPEC.md` section 0.
+P1.5 — wired Template Builder prototype complete (`app/`). Next: SvelteKit migration to `web/`. See `docs/migration-sveltekit.md` for the plan.
 
 ## Repo layout
 
 ```
-SPEC.md         living planning document
-CHANGELOG.md    dated entries describing what changed in spec or mockup
-README.md       you are here
-docs/           durable documentation (notation, decisions, architecture)
-tests/          test plan; populated when app code lands
-mockup-v1/      round-1 mockup (20 views, preserved for compare)
-mockup-v2/      round-2 P1 MVP mockup (cut to ~10 views)
-app/            round-3 wired Template Builder (Alpine + Dexie)
-mockup/         alias of the v1 nav hub
+SPEC.md                   living planning document
+CHANGELOG.md              dated entries per revision
+README.md                 you are here
+docs/
+  architecture.md         tech choices and tradeoffs
+  decisions.md            ADR-lite log
+  notation.md             canonical syntax reference
+  migration-sveltekit.md  target stack and migration steps
+  user-stories.md         P1-P2 user stories
+  review-r3.2.md          design review findings and backlog
+tests/
+  README.md               planned test approach (Vitest + Playwright)
+app/                      round-3 wired prototype (Alpine + Dexie)
 ```
+
+Mockup rounds (v1, v2) are excluded from the repo. See CHANGELOG for what each round covered.
 
 ## Run
 
-Static, no build:
+No build step. Static files only.
 
 ```
-# wired Template Builder
 cd app && python3 -m http.server 8000
-# then http://localhost:8000
-
-# v2 mockup site
-cd mockup-v2 && python3 -m http.server 8001
-# then http://localhost:8001
+# open http://localhost:8000
 ```
 
-Or open the relevant `index.html` directly in a browser.
+Or open `app/index.html` directly in a browser.
+
+## Deploy
+
+Vercel config is in `vercel.json` at repo root (`outputDirectory: app`). Connect the repo in the Vercel dashboard — no build command required.
+
+Live deploy: https://alf-gym.vercel.app *(connect repo to activate)*
 
 ## Decisions locked
 
@@ -45,19 +52,21 @@ Or open the relevant `index.html` directly in a browser.
 - Storage is structured; markdown is import/export only
 - Hierarchical numbering: `2.1`, `2.2`
 - Set entry: prefill + chevron increments + tap-to-type
-- Notation v3: `;` for per side, `!` dropped (notable derived)
+- Notation v3.1: `;` for per side, `!` stays as user input (notable not derived — r3.1 reversal)
 - English mode shows zero syntax tokens
 - Syntax toggle is app-wide (menubar)
-- Trackers (injury, asymmetry, skill) as a primitive
+- Trackers (injury, asymmetry, skill) as a primitive — ships P2
 - Global floating new-session button
 - Speech: deferred to P4
 - Quick edit by prompt: deferred to P3
 
 ## Tech direction
 
-Alpine.js, htmx for sync. Dexie over IndexedDB. Workbox service worker. Supabase for cloud sync (single-user). Vite build.
+**Current prototype (`app/`):** Alpine.js + Dexie (IndexedDB). No build, no bundler.
+
+**Target (`web/`):** SvelteKit + TailwindCSS + Dexie + Supabase, deployed to Vercel. See `docs/migration-sveltekit.md`.
 
 ## Conventions
 
 - Notation tokens are first-class. See `docs/notation.md`.
-- Commits: `area: short description`. Areas: `spec`, `mockup`, `app`, `infra`, `docs`, `tests`.
+- Commits: `area: short description`. Areas: `spec`, `app`, `web`, `infra`, `docs`, `tests`.
