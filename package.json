@@ -1,0 +1,28 @@
+{
+  "name": "alf-gym",
+  "version": "1.0.0",
+  "description": "A mobile-first PWA for tracking gym sessions. Offline-first, fast capture, history that surfaces last cycle's output as you log this cycle's.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alvarix/alf-gym.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/alvarix/alf-gym/issues"
+  },
+  "homepage": "https://github.com/alvarix/alf-gym#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}

@@ -69,10 +69,11 @@ async function seedIfEmpty() {
       });
 
       // Days under 9.2.
-      const dayA    = await db.days.add({ workoutId: w92, groupKey: 'A', name: 'Day A - Front',    isAlt: 0, order: 1 });
-      const dayAalt = await db.days.add({ workoutId: w92, groupKey: 'A', name: 'Day A alt - home', isAlt: 1, order: 2 });
-      const dayB    = await db.days.add({ workoutId: w92, groupKey: 'B', name: 'Day B - Back',     isAlt: 0, order: 3 });
-      const dayC    = await db.days.add({ workoutId: w92, groupKey: 'C', name: 'Day C - Skills + Diagnostics', isAlt: 0, order: 4 });
+      const dayA    = await db.days.add({ workoutId: w92, groupKey: 'A', name: 'Day A - Front',        isAlt: 0, order: 1 });
+      const dayAalt = await db.days.add({ workoutId: w92, groupKey: 'A', name: 'Day A alt - home',     isAlt: 1, order: 2 });
+      const dayB    = await db.days.add({ workoutId: w92, groupKey: 'B', name: 'Day B - Back',          isAlt: 0, order: 3 });
+      const dayBalt = await db.days.add({ workoutId: w92, groupKey: 'B', name: 'Day B alt - home',     isAlt: 1, order: 4 });
+      const dayC    = await db.days.add({ workoutId: w92, groupKey: 'C', name: 'Day C - Skills + Diagnostics', isAlt: 0, order: 5 });
 
       // Exercise library.
       const ex = {};
@@ -96,6 +97,19 @@ async function seedIfEmpty() {
       await addEx('KB clean to front squat',               null,    'kb',       'kb');
       await addEx('KB figure 8',                           null,    'kb',       'kb');
       await addEx('Sprawl',                                null,    'plyo',     'none');
+
+      // Day B alt exercises.
+      await addEx('Bear crawl',                            null,    'mobility', 'none');
+      await addEx('Shinbox to Farmer\'s Squat',            null,    'mobility', 'none');
+      await addEx('Single-leg hip thrust off bench',       null,    'glute',    'bench');
+      await addEx('DB RDL',                                null,    'hinge',    'db');
+      await addEx('DB B-stance RDL',                       ex['DB RDL'], 'hinge', 'db');
+      await addEx('Heavy bag combo',                       null,    'conditioning', 'bag');
+      await addEx('Band woodchop low-to-high',             ex['Cable woodchop high-to-low'], 'rotation', 'band');
+      await addEx('Banded hip CARs',                       null,    'mobility', 'band');
+      await addEx('Nordic hamstring curl',                 null,    'hinge',    'bench');
+      await addEx('Single-leg glute bridge',               null,    'glute',    'none');
+      await addEx('Heavy sled push',                       null,    'conditioning', 'sled');
 
       // Day A blocks.
       const b1 = await db.blocks.add({ dayId: dayA, name: 'Warmup',         type: 'linear', order: 1 });
@@ -123,6 +137,35 @@ async function seedIfEmpty() {
       await presc(b6, ex['Seated bent-knee calf raise'],   { sets: 3, reps: 12,  sideScheme: 'unilateral-L-first', load: '85' }, 1);
       await presc(b6, ex['Eccentric calf raise off step'], { sets: 3, reps: 8,   sideScheme: 'unilateral-L-first', load: '45' }, 2);
       await presc(b6, ex['Banded dorsiflexion mob'],       { sets: 2, reps: null, holdSec: 30, sideScheme: 'unilateral-L-first', load: 'band' }, 3);
+
+      // Day B alt blocks. Equipment: bench, DBs ≤50, pull-up bar, bands, bag, sled.
+      const ba1 = await db.blocks.add({ dayId: dayBalt, name: 'Warmup',         type: 'linear',  order: 1 });
+      const ba2 = await db.blocks.add({ dayId: dayBalt, name: 'Hinge pair',     type: 'linear',  order: 2 });
+      const ba3 = await db.blocks.add({ dayId: dayBalt, name: 'KB compound',    type: 'circuit', rounds: 3, restBetweenRoundsSec: 90, order: 3 });
+      const ba4 = await db.blocks.add({ dayId: dayBalt, name: 'Rotation',       type: 'linear',  order: 4 });
+      const ba5 = await db.blocks.add({ dayId: dayBalt, name: 'Hips',           type: 'linear',  order: 5 });
+      const ba6 = await db.blocks.add({ dayId: dayBalt, name: 'Soccer prehab',  type: 'linear',  order: 6 });
+      const ba7 = await db.blocks.add({ dayId: dayBalt, name: 'Bonus',          type: 'linear',  optional: true, order: 7 });
+
+      await presc(ba1, ex['Bear crawl'],                    { sets: 2, reps: null, holdSec: null, sideScheme: 'bilateral', load: '', notes: '20 yards each, slow. Knees 1 inch off ground.' }, 1);
+      await presc(ba1, ex['Shinbox to Farmer\'s Squat'],    { sets: 1, reps: 8,   sideScheme: 'unilateral-L-first', load: '', notes: 'L gets 2 extra. Fluid hip rotation.' }, 2);
+      await presc(ba1, ex['Single-leg hip thrust off bench'],{ sets: 2, reps: 8,  sideScheme: 'unilateral-L-first', load: '', notes: 'Full range glute activation.' }, 3);
+
+      await presc(ba2, ex['DB RDL'],                        { sets: 2, reps: 8,   sideScheme: 'bilateral', load: '50', notes: 'Heaviest DBs. Same cues as barbell.' }, 1);
+      await presc(ba2, ex['DB B-stance RDL'],               { sets: 3, reps: 8,   sideScheme: 'unilateral-L-first', load: '50', notes: 'One or two DBs.' }, 2);
+
+      await presc(ba3, ex['KB clean to front squat'],       { sets: 3, reps: 8,   sideScheme: 'unilateral-L-first', load: '25', notes: 'Lighter bell, more reps.' }, 1);
+      await presc(ba3, ex['KB figure 8'],                   { sets: 3, reps: 12,  sideScheme: 'bilateral', load: '25', notes: '6 each direction.' }, 2);
+      await presc(ba3, ex['Heavy bag combo'],                { sets: 3, reps: null, holdSec: 30, sideScheme: 'bilateral', load: '', notes: 'Jab-cross-hook-body, reset. Alt: sprawl to knee strike x8.' }, 3);
+
+      await presc(ba4, ex['Band woodchop low-to-high'],     { sets: 3, reps: 10,  sideScheme: 'unilateral-L-first', load: 'band', notes: 'Anchor band low on pull-up bar base.' }, 1);
+
+      await presc(ba5, ex['Banded hip CARs'],               { sets: 2, reps: 5,   sideScheme: 'unilateral-L-first', load: 'band', notes: 'Slow full circles.' }, 1);
+
+      await presc(ba6, ex['Nordic hamstring curl'],          { sets: 3, reps: 5,   sideScheme: 'bilateral', load: '', notes: 'Eccentric focus (4-6 reps). Anchor feet under bench.' }, 1);
+      await presc(ba6, ex['Single-leg glute bridge'],        { sets: 3, reps: 8,   sideScheme: 'unilateral-L-first', load: '', holdSec: 3, notes: '3s hold at top.' }, 2);
+
+      await presc(ba7, ex['Heavy sled push'],                { sets: 4, reps: null, holdSec: null, sideScheme: 'bilateral', load: '', notes: '30 yards per set.' }, 1);
 
       // Skeleton blocks for B and C.
       const seedSkeleton = async (dayId, key) => {

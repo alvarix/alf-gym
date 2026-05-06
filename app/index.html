@@ -211,7 +211,7 @@
       <div>
         <div class="row spread" style="margin-bottom: 8px;">
           <div>
-            <h2 style="margin: 0;" x-text="(activeSession.startedAt || '').slice(0, 10)"></h2>
+            <h2 style="margin: 0;"><span x-text="(activeSession.startedAt || '').slice(0, 10)"></span> <span class="muted" style="font-size: 14px; font-weight: 400;" x-text="sessionStartTime(activeSession)"></span></h2>
             <div class="muted" style="font-size: 12px;">
               <span x-text="sessionWorkoutName(activeSession)"></span>
               <span> &middot; </span>
@@ -291,9 +291,10 @@
                   <thead>
                     <tr style="color: var(--text-3); font-size: 11px;">
                       <th style="text-align: left; width: 24px; padding: 2px 4px 2px 0;">#</th>
-                      <th style="text-align: left; padding: 2px 4px;">reps</th>
-                      <th style="text-align: left; padding: 2px 4px;">load</th>
-                      <th style="text-align: left; padding: 2px 4px;">side</th>
+                      <th x-show="!syntax" style="text-align: left; padding: 2px 4px;">reps</th>
+                      <th x-show="!syntax" style="text-align: left; padding: 2px 4px;">load</th>
+                      <th x-show="!syntax" style="text-align: left; padding: 2px 4px;">side</th>
+                      <th x-show="syntax" style="text-align: left; padding: 2px 4px;">token</th>
                       <th style="width: 30px; padding: 2px 4px;">done</th>
                       <th style="width: 24px; padding: 2px 0;"></th>
                     </tr>
@@ -302,15 +303,15 @@
                     <template x-for="s in perf._sets" :key="s.id">
                       <tr>
                         <td class="mono dim" style="padding: 2px 4px 2px 0;" x-text="s.setIndex"></td>
-                        <td style="padding: 2px 4px;">
+                        <td x-show="!syntax" style="padding: 2px 4px;">
                           <input :value="s.reps" @change="updateSetField(s, 'reps', $event.target.value)" :disabled="activeSession.status !== 'in_progress'"
                             :style="s.prefilled ? 'height:28px;padding:0 6px;font-family:var(--mono);font-size:13px;opacity:0.45;font-style:italic' : 'height:28px;padding:0 6px;font-family:var(--mono);font-size:13px'" />
                         </td>
-                        <td style="padding: 2px 4px;">
+                        <td x-show="!syntax" style="padding: 2px 4px;">
                           <input :value="s.load" @change="updateSetField(s, 'load', $event.target.value)" :disabled="activeSession.status !== 'in_progress'"
                             :style="s.prefilled ? 'height:28px;padding:0 6px;font-family:var(--mono);font-size:13px;opacity:0.45;font-style:italic' : 'height:28px;padding:0 6px;font-family:var(--mono);font-size:13px'" />
                         </td>
-                        <td style="padding: 2px 4px;">
+                        <td x-show="!syntax" style="padding: 2px 4px;">
                           <select :value="s.side" @change="updateSetField(s, 'side', $event.target.value)" :disabled="activeSession.status !== 'in_progress'"
                             :style="s.prefilled ? 'height:28px;padding:0 4px;font-size:12px;opacity:0.45' : 'height:28px;padding:0 4px;font-size:12px'">
                             <option value=""></option>
@@ -318,6 +319,10 @@
                             <option value="R">R</option>
                             <option value="both">both</option>
                           </select>
+                        </td>
+                        <td x-show="syntax" style="padding: 2px 4px;">
+                          <input :value="tokenFromSet(s)" @change="applySetToken(s, $event.target.value)" :disabled="activeSession.status !== 'in_progress'"
+                            :style="s.prefilled ? 'width:100%;height:28px;padding:0 6px;font-family:var(--mono);font-size:13px;opacity:0.45;font-style:italic' : 'width:100%;height:28px;padding:0 6px;font-family:var(--mono);font-size:13px'" />
                         </td>
                         <td style="padding: 2px 4px; text-align: center;">
                           <input type="checkbox" :checked="s.done" @change="toggleSetDone(s)" :disabled="activeSession.status !== 'in_progress'" style="width: auto; height: auto; margin: 0;" />

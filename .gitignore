@@ -11,3 +11,5 @@ dist/
 mockup/
 mockup-v1/
 mockup-v2/
+test-results/
+node_modules/

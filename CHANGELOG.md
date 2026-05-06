@@ -2,6 +2,17 @@
 
 All notable changes to alf-gym are recorded here. Newest entries on top.
 
+## 2026-05-05 r4.2 (session polish, Day B alt seed, E2E tests)
+
+### Added
+- **Day B alt (home)** seeded under Workout 9.2. 7 blocks: Warmup (bear crawl, shinbox squat, SL hip thrust), Hinge pair (DB RDL + B-stance RDL), KB compound circuit (KB clean/squat, figure 8, heavy bag combo), Rotation (band woodchop), Hips (banded hip CARs), Soccer prehab (Nordic curl + SL glute bridge), Bonus (heavy sled push, optional). Equipment: bench, DBs ≤50, pull-up bar, bands, bag, sled.
+- **Playwright E2E test suite** at `tests/e2e/session.spec.js`. 4 tests covering: start session button present, navigation to capture view, set rows in en mode, no JS errors on load. Run with `npx playwright test`. Requires no extra setup - web server auto-starts from `app/`.
+- **Session start time** now shows in the capture view header (e.g., `2026-05-05 7:52 AM`).
+- **Syntax mode in session capture**: toggle syn in the menubar to collapse reps/load/side columns into a single token input per set. Token format: `{load} {reps}` bilateral, `{load};{reps}` per-side, `{load}!` notable.
+
+### Fixed
+- **IDB transaction error** (`Failed to execute 'objectStore'`): reads from `prescriptions` and `exercises` were happening inside the `sessions/performances/sets` transaction which did not include those stores. Moved all reads before the transaction opens.
+
 ## 2026-05-05 r4.1 (prefill last cycle's actuals)
 
 ### Added

@@ -146,18 +146,17 @@ function alfApp() {
 
     async startSessionForDay(dayId) {
       // Build a session by snapshotting day -> blocks -> prescriptions into performances.
+      try {
       const day = await window.alfdb.days.get(dayId);
       if (!day) return;
       const blocks = await window.alfdb.blocks.where({ dayId }).toArray();
       blocks.sort((a, b) => a.order - b.order);
 
       // Find the most recent completed session for this same day to prefill actuals.
-      const prevSessions = await window.alfdb.sessions
-        .where('dayId').equals(dayId)
-        .filter(s => s.status === 'completed')
-        .toArray();
-      prevSessions.sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
-      const prevSession = prevSessions[0] || null;
+      const allDaySessions = await window.alfdb.sessions.toArray();
+      const prevSession = allDaySessions
+        .filter(s => s.dayId === dayId && s.status === 'completed')
+        .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))[0] || null;
 
       // Build exerciseId -> sorted sets[] from that session.
       const prevSetsByExerciseId = {};
@@ -168,6 +167,18 @@ function alfApp() {
           const ppSets = await window.alfdb.sets.where({ performanceId: pp.id }).toArray();
           ppSets.sort((a, b) => a.setIndex - b.setIndex);
           prevSetsByExerciseId[pp.exerciseId] = ppSets;
+        }
+      }
+
+      // Load all prescriptions and exercises before the transaction (IDB transactions
+      // can only access the stores they were opened with).
+      const blockPrescriptions = [];
+      for (const b of blocks) {
+        const prescriptions = await window.alfdb.prescriptions.where({ blockId: b.id }).toArray();
+        prescriptions.sort((a, b) => a.order - b.order);
+        for (const p of prescriptions) {
+          const ex = await window.alfdb.exercises.get(p.exerciseId);
+          blockPrescriptions.push({ block: b, prescription: p, exerciseName: ex ? ex.name : '?' });
         }
       }
 
@@ -186,52 +197,48 @@ function alfApp() {
             note: ''
           });
           let order = 0;
-          for (const b of blocks) {
-            const prescriptions = await window.alfdb.prescriptions.where({ blockId: b.id }).toArray();
-            prescriptions.sort((a, b) => a.order - b.order);
-            for (const p of prescriptions) {
-              order += 1;
-              const ex = await window.alfdb.exercises.get(p.exerciseId);
-              const perfId = await window.alfdb.performances.add({
-                sessionId: newSessionId,
-                prescriptionId: p.id,
-                exerciseId: p.exerciseId,
-                exerciseName: ex ? ex.name : '?',
-                blockId: b.id,
-                blockName: b.name,
-                blockType: b.type,
-                blockOptional: !!b.optional,
-                blockRounds: b.rounds || null,
-                order,
-                prescribedSets: p.sets || 1,
-                prescribedReps: p.reps == null ? '' : String(p.reps),
-                prescribedLoad: p.load || '',
-                prescribedSideScheme: p.sideScheme || 'bilateral',
-                prescribedHoldSec: p.holdSec || null,
-                prescribedNotable: !!p.notable,
+          for (const { block: b, prescription: p, exerciseName } of blockPrescriptions) {
+            order += 1;
+            const perfId = await window.alfdb.performances.add({
+              sessionId: newSessionId,
+              prescriptionId: p.id,
+              exerciseId: p.exerciseId,
+              exerciseName,
+              blockId: b.id,
+              blockName: b.name,
+              blockType: b.type,
+              blockOptional: !!b.optional,
+              blockRounds: b.rounds || null,
+              order,
+              prescribedSets: p.sets || 1,
+              prescribedReps: p.reps == null ? '' : String(p.reps),
+              prescribedLoad: p.load || '',
+              prescribedSideScheme: p.sideScheme || 'bilateral',
+              prescribedHoldSec: p.holdSec || null,
+              prescribedNotable: !!p.notable,
+              notes: ''
+            });
+            const numSets = p.sets || 1;
+            const prevSets = prevSetsByExerciseId[p.exerciseId] || [];
+            for (let i = 1; i <= numSets; i++) {
+              const prev = prevSets[i - 1] || null;
+              await window.alfdb.sets.add({
+                performanceId: perfId,
+                setIndex: i,
+                reps: prev ? (prev.reps || '') : '',
+                load: prev ? (prev.load || '') : '',
+                side: prev ? (prev.side || '') : '',
+                holdSec: prev ? (prev.holdSec || null) : null,
+                notable: false,
+                done: false,
+                prefilled: !!prev,
                 notes: ''
               });
-              const numSets = p.sets || 1;
-              const prevSets = prevSetsByExerciseId[p.exerciseId] || [];
-              for (let i = 1; i <= numSets; i++) {
-                const prev = prevSets[i - 1] || null;
-                await window.alfdb.sets.add({
-                  performanceId: perfId,
-                  setIndex: i,
-                  reps: prev ? (prev.reps || '') : '',
-                  load: prev ? (prev.load || '') : '',
-                  side: prev ? (prev.side || '') : '',
-                  holdSec: prev ? (prev.holdSec || null) : null,
-                  notable: false,
-                  done: false,
-                  prefilled: !!prev,
-                  notes: ''
-                });
-              }
             }
           }
         });
       this.gotoHash('#/s/' + newSessionId);
+      } catch (e) { console.error('startSessionForDay:', e.name, e.message, e); this.showFlash('Error: ' + (e.message || e.name || String(e))); }
     },
 
     async openSession(id) {
@@ -356,6 +363,48 @@ function alfApp() {
       const h = Math.floor(mins / 60);
       const m = mins % 60;
       return h ? (h + 'h ' + m + 'm') : (m + 'm');
+    },
+
+    sessionStartTime(s) {
+      if (!s || !s.startedAt) return '';
+      return new Date(s.startedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    },
+
+    tokenFromSet(s) {
+      let out = s.load || '';
+      if (s.notable) out += '!';
+      if (s.holdSec) out += (out ? ' ' : '') + s.holdSec + 's';
+      if (s.reps) {
+        const sep = (s.side === 'L' || s.side === 'R') ? ';' : ' ';
+        out += (out ? sep : '') + s.reps;
+      }
+      return out.trim();
+    },
+
+    async applySetToken(s, token) {
+      const t = (token || '').trim();
+      let reps = '', load = '', side = '', holdSec = null, notable = false;
+      if (t.includes(';')) {
+        const idx = t.indexOf(';');
+        let lp = t.slice(0, idx).trim();
+        const rp = t.slice(idx + 1).trim();
+        if (lp.endsWith('!')) { notable = true; lp = lp.slice(0, -1); }
+        load = lp; side = 'L';
+        const hm = rp.match(/^([\d.]+)s$/i);
+        if (hm) holdSec = parseInt(hm[1], 10); else reps = rp;
+      } else {
+        const parts = t.split(/\s+/);
+        let lp = parts.length > 1 ? parts.slice(0, -1).join(' ') : t;
+        const rp = parts.length > 1 ? parts[parts.length - 1] : '';
+        if (lp.endsWith('!')) { notable = true; lp = lp.slice(0, -1); }
+        const hm = lp.match(/^([\d.]+)s$/i);
+        if (hm) holdSec = parseInt(hm[1], 10); else load = lp;
+        reps = rp;
+      }
+      const patch = { reps, load, side, holdSec, notable };
+      if (s.prefilled) { patch.prefilled = false; s.prefilled = false; }
+      await window.alfdb.sets.update(s.id, patch);
+      Object.assign(s, patch);
     },
 
     sessionDayName(s) {
