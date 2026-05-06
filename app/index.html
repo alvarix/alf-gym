@@ -304,15 +304,15 @@
                         <td class="mono dim" style="padding: 2px 4px 2px 0;" x-text="s.setIndex"></td>
                         <td style="padding: 2px 4px;">
                           <input :value="s.reps" @change="updateSetField(s, 'reps', $event.target.value)" :disabled="activeSession.status !== 'in_progress'"
-                            style="height: 28px; padding: 0 6px; font-family: var(--mono); font-size: 13px;" />
+                            :style="s.prefilled ? 'height:28px;padding:0 6px;font-family:var(--mono);font-size:13px;opacity:0.45;font-style:italic' : 'height:28px;padding:0 6px;font-family:var(--mono);font-size:13px'" />
                         </td>
                         <td style="padding: 2px 4px;">
                           <input :value="s.load" @change="updateSetField(s, 'load', $event.target.value)" :disabled="activeSession.status !== 'in_progress'"
-                            style="height: 28px; padding: 0 6px; font-family: var(--mono); font-size: 13px;" />
+                            :style="s.prefilled ? 'height:28px;padding:0 6px;font-family:var(--mono);font-size:13px;opacity:0.45;font-style:italic' : 'height:28px;padding:0 6px;font-family:var(--mono);font-size:13px'" />
                         </td>
                         <td style="padding: 2px 4px;">
                           <select :value="s.side" @change="updateSetField(s, 'side', $event.target.value)" :disabled="activeSession.status !== 'in_progress'"
-                            style="height: 28px; padding: 0 4px; font-size: 12px;">
+                            :style="s.prefilled ? 'height:28px;padding:0 4px;font-size:12px;opacity:0.45' : 'height:28px;padding:0 4px;font-size:12px'">
                             <option value=""></option>
                             <option value="L">L</option>
                             <option value="R">R</option>
@@ -360,7 +360,7 @@
     </template>
 
     <div class="wizard-text">
-      <strong>Where you are:</strong> live capture for one session. Each set row holds your actual reps and load. Tap <strong>done</strong> to mark a set complete. Use <strong>repeat last</strong> for unchanged sets, <strong>+ set</strong> for an extra round, <strong>$ pain</strong> to log a pain mark on this exercise. End when finished.
+      <strong>Where you are:</strong> live capture for one session. Each set row holds your actual reps and load. Faded italic values are prefilled from your last session - touch them to confirm. Tap <strong>done</strong> to mark a set complete. Use <strong>repeat last</strong> for unchanged sets, <strong>+ set</strong> for an extra round, <strong>$ pain</strong> to log a pain mark on this exercise. End when finished.
     </div>
   </div>
 

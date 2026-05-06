@@ -150,6 +150,27 @@ function alfApp() {
       if (!day) return;
       const blocks = await window.alfdb.blocks.where({ dayId }).toArray();
       blocks.sort((a, b) => a.order - b.order);
+
+      // Find the most recent completed session for this same day to prefill actuals.
+      const prevSessions = await window.alfdb.sessions
+        .where('dayId').equals(dayId)
+        .filter(s => s.status === 'completed')
+        .toArray();
+      prevSessions.sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+      const prevSession = prevSessions[0] || null;
+
+      // Build exerciseId -> sorted sets[] from that session.
+      const prevSetsByExerciseId = {};
+      if (prevSession) {
+        const prevPerfs = await window.alfdb.performances
+          .where('sessionId').equals(prevSession.id).toArray();
+        for (const pp of prevPerfs) {
+          const ppSets = await window.alfdb.sets.where({ performanceId: pp.id }).toArray();
+          ppSets.sort((a, b) => a.setIndex - b.setIndex);
+          prevSetsByExerciseId[pp.exerciseId] = ppSets;
+        }
+      }
+
       let newSessionId = null;
       await window.alfdb.transaction('rw',
         [window.alfdb.sessions, window.alfdb.performances, window.alfdb.sets],
@@ -190,18 +211,20 @@ function alfApp() {
                 prescribedNotable: !!p.notable,
                 notes: ''
               });
-              // Pre-create empty set rows = number of prescribed sets.
               const numSets = p.sets || 1;
+              const prevSets = prevSetsByExerciseId[p.exerciseId] || [];
               for (let i = 1; i <= numSets; i++) {
+                const prev = prevSets[i - 1] || null;
                 await window.alfdb.sets.add({
                   performanceId: perfId,
                   setIndex: i,
-                  reps: '',
-                  load: '',
-                  side: '',
-                  holdSec: null,
+                  reps: prev ? (prev.reps || '') : '',
+                  load: prev ? (prev.load || '') : '',
+                  side: prev ? (prev.side || '') : '',
+                  holdSec: prev ? (prev.holdSec || null) : null,
                   notable: false,
                   done: false,
+                  prefilled: !!prev,
                   notes: ''
                 });
               }
@@ -246,15 +269,17 @@ function alfApp() {
     },
 
     async updateSetField(s, field, value) {
-      const patch = {};
-      patch[field] = value;
+      const patch = { [field]: value };
+      if (s.prefilled) { patch.prefilled = false; s.prefilled = false; }
       await window.alfdb.sets.update(s.id, patch);
-      // Reflect locally.
       s[field] = value;
     },
 
     async toggleSetDone(s) {
-      await this.updateSetField(s, 'done', !s.done);
+      const patch = { done: !s.done };
+      if (s.prefilled) { patch.prefilled = false; s.prefilled = false; }
+      await window.alfdb.sets.update(s.id, patch);
+      s.done = !s.done;
     },
 
     async addSet(perf) {

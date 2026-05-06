@@ -2,6 +2,18 @@
 
 All notable changes to alf-gym are recorded here. Newest entries on top.
 
+## 2026-05-05 r4.1 (prefill last cycle's actuals)
+
+### Added
+- **Prefill from last session**: when starting a session, the app looks up the most recent completed session for the same day and copies each exercise's reps/load/side values into the new set rows.
+- Prefilled values render faded and italic to distinguish them from user-entered data. Any edit (typing, side change, done checkbox) clears the prefill flag and the dimming, confirming the value.
+- No schema bump required: `prefilled` is an unindexed boolean on the `sets` record.
+
+### Behavior
+- Lookup matches by `exerciseId` within the same `dayId`. If an exercise appears in a new position or was added since last session, its rows start empty.
+- If the prescription now has more sets than last session, extra rows start empty.
+- If no prior completed session exists for the day, all rows start empty (previous behavior).
+
 ## 2026-04-30 r4.0 (sessions: capture flow lands)
 
 ### Added
