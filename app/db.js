@@ -167,7 +167,7 @@ async function seedIfEmpty() {
 
       await presc(ba7, ex['Heavy sled push'],                { sets: 4, reps: null, holdSec: null, sideScheme: 'bilateral', load: '', notes: '30 yards per set.' }, 1);
 
-      // Skeleton blocks for B and C.
+      // Skeleton blocks for Day B (main — no prescriptions yet).
       const seedSkeleton = async (dayId, key) => {
         const list = window.DAY_SKELETONS[key] || ['Warmup'];
         for (let i = 0; i < list.length; i++) {
@@ -175,7 +175,70 @@ async function seedIfEmpty() {
         }
       };
       await seedSkeleton(dayB, 'B');
-      await seedSkeleton(dayC, 'C');
+
+      // Day C exercises.
+      await addEx('Single-leg wall sit',                        null,    'diagnostic', 'none');
+      await addEx('Single-leg glute bridge hold',               null,    'diagnostic', 'none');
+      await addEx('Side plank with top leg lift',               null,    'diagnostic', 'none');
+      await addEx('Single-leg calf raise hold at top',          null,    'diagnostic', 'none');
+      await addEx('Eyes-closed single-leg balance',             null,    'diagnostic', 'none');
+      await addEx('Deep goblet squat hold',                     null,    'mobility',   'kb');
+      await addEx('Half-kneeling hip flexor stretch with KB',   null,    'mobility',   'kb');
+      await addEx('Hamstring wall slide',                       null,    'mobility',   'none');
+      await addEx('Splits progression',                         null,    'mobility',   'none');
+      await addEx('Staff spine stretches',                      null,    'mobility',   'none');
+      await addEx('Cossack squat',                              null,    'mobility',   'none');
+      await addEx('Single-leg drop to stick',                   null,    'plyo',       'none');
+      await addEx('Single-leg 4-point hop to stick',            null,    'plyo',       'none');
+      await addEx('Tuck jump to freeze',                        null,    'plyo',       'none');
+      await addEx('Capo flow',                                  null,    'skill',      'none');
+      await addEx('5 gungfu stances',                           null,    'skill',      'none');
+      await addEx('Low kicks',                                  null,    'skill',      'none');
+      await addEx('Capo warmup flow',                           null,    'skill',      'none');
+      await addEx('Get-up-without-hands drill',                 null,    'skill',      'none');
+      await addEx('Surf popup burpee',                          null,    'skill',      'none');
+      await addEx('Handstand wall holds',                       null,    'skill',      'none');
+      await addEx('Bench 90-degree hang',                       null,    'mobility',   'bench');
+
+      // Day C blocks.
+      const bc0 = await db.blocks.add({ dayId: dayC, name: 'Warmup',             type: 'linear', optional: false, order: 1 });
+      const bc1 = await db.blocks.add({ dayId: dayC, name: 'Diagnostic ISO',     type: 'linear', optional: false, order: 2 });
+      const bc2 = await db.blocks.add({ dayId: dayC, name: 'Weighted stretching',type: 'linear', optional: false, order: 3 });
+      const bc3 = await db.blocks.add({ dayId: dayC, name: 'Plyos',              type: 'linear', optional: true,  order: 4 });
+      const bc4 = await db.blocks.add({ dayId: dayC, name: 'Skill',              type: 'linear', optional: true,  order: 5 });
+      const bc5 = await db.blocks.add({ dayId: dayC, name: 'Cooldown',           type: 'linear', optional: true,  order: 6 });
+
+      // Diagnostic ISOs — max hold each side, log time weekly.
+      await presc(bc1, ex['Single-leg wall sit'],           { sets: 1, reps: null, holdSec: 30, sideScheme: 'unilateral-L-first', load: '', notes: 'Max hold each side, log time. Alt: single-leg squat hold at 90 deg' }, 1);
+      await presc(bc1, ex['Single-leg glute bridge hold'],  { sets: 1, reps: null, holdSec: 30, sideScheme: 'unilateral-L-first', load: '', notes: '30s target. Note when hips drop. Alt: SL hip thrust off bench, hold 20s' }, 2);
+      await presc(bc1, ex['Side plank with top leg lift'],  { sets: 1, reps: null, holdSec: 20, sideScheme: 'unilateral-L-first', load: '', notes: '20s each side. Glute med endurance. Alt: Copenhagen hold 20s each side' }, 3);
+      await presc(bc1, ex['Single-leg calf raise hold at top'], { sets: 1, reps: null, holdSec: 15, sideScheme: 'unilateral-L-first', load: '', notes: '15s each side, note shake onset. Alt: SL forefoot balance eyes open 30s' }, 4);
+      await presc(bc1, ex['Eyes-closed single-leg balance'],{ sets: 1, reps: null, holdSec: 30, sideScheme: 'unilateral-L-first', load: '', notes: '30s each side, barefoot. Weekly constant.' }, 5);
+
+      // Weighted stretching — loaded positions held for time.
+      await presc(bc2, ex['Deep goblet squat hold'],        { sets: 3, reps: null, holdSec: 30, sideScheme: 'bilateral',         load: '', notes: 'KB or DB goblet. Drive knees out, chest tall. Alt: BW squat hold with band pull-apart 3x30s' }, 1);
+      await presc(bc2, ex['Half-kneeling hip flexor stretch with KB'], { sets: 3, reps: null, holdSec: 30, sideScheme: 'unilateral-L-first', load: '', notes: 'Right side twice. Alt: couch stretch 3x30s each side' }, 2);
+      await presc(bc2, ex['Hamstring wall slide'],          { sets: 3, reps: null, holdSec: 30, sideScheme: 'unilateral-L-first', load: '', notes: 'Alt: elevated single-leg forward fold 3x20s' }, 3);
+      await presc(bc2, ex['Splits progression'],            { sets: 1, reps: null, holdSec: null, sideScheme: 'bilateral',       load: '', notes: '' }, 4);
+      await presc(bc2, ex['Staff spine stretches'],         { sets: 2, reps: null, holdSec: null, sideScheme: 'bilateral',       load: '', notes: '2 rounds: kneeling rotation 5s, standing 10s, flags 10s' }, 5);
+      await presc(bc2, ex['Cossack squat'],                 { sets: 3, reps: 6,    holdSec: null, sideScheme: 'unilateral-L-first', load: '', notes: 'Slow, deep lateral shift. Chest tall, heel down. Alt: 90/90 active lift-off 3x8/side' }, 6);
+
+      // Plyos (optional) — single-leg stick focus.
+      await presc(bc3, ex['Single-leg drop to stick'],      { sets: 3, reps: 5, sideScheme: 'unilateral-L-first', load: '', notes: 'L first. Step off low box, land same foot, freeze 3s. No push-off. Alt: SL squat jump to stick 3x4/side' }, 1);
+      await presc(bc3, ex['Single-leg 4-point hop to stick'], { sets: 3, reps: 4, sideScheme: 'unilateral-L-first', load: '', notes: '1 rep = hop F/R/B/L, stick 2s each. Keep hips level. Alt: SL clock taps 3x2 full clocks/side' }, 2);
+      await presc(bc3, ex['Tuck jump to freeze'],           { sets: 3, reps: 5, sideScheme: 'bilateral',           load: '', notes: 'Max height, land both feet, freeze 3s. Alt: broad jump to stick 3x5' }, 3);
+
+      // Skill (optional) — pick 2, rotate.
+      await presc(bc4, ex['Capo flow'],                     { sets: 1, reps: null, sideScheme: 'bilateral', load: '', notes: 'Ginga, esquiva flow, au practice. Pick 2, rotate.' }, 1);
+      await presc(bc4, ex['5 gungfu stances'],              { sets: 1, reps: null, sideScheme: 'bilateral', load: '', notes: 'Pick 2, rotate.' }, 2);
+      await presc(bc4, ex['Low kicks'],                     { sets: 1, reps: null, sideScheme: 'bilateral', load: '', notes: 'Pick 2, rotate.' }, 3);
+      await presc(bc4, ex['Capo warmup flow'],              { sets: 1, reps: null, sideScheme: 'bilateral', load: '', notes: 'Pick 2, rotate.' }, 4);
+      await presc(bc4, ex['Get-up-without-hands drill'],    { sets: 1, reps: null, sideScheme: 'bilateral', load: '', notes: 'Pick 2, rotate.' }, 5);
+      await presc(bc4, ex['Surf popup burpee'],             { sets: 1, reps: null, sideScheme: 'bilateral', load: '', notes: 'Pick 2, rotate.' }, 6);
+      await presc(bc4, ex['Handstand wall holds'],          { sets: 1, reps: null, sideScheme: 'bilateral', load: '', notes: 'Only when shoulder green-lit. Pick 2, rotate.' }, 7);
+
+      // Cooldown (optional).
+      await presc(bc5, ex['Bench 90-degree hang'],          { sets: 1, reps: null, holdSec: 60, sideScheme: 'bilateral', load: '', notes: 'No arch, round lower back, target lower lat. Hold obliques on exhale, breathe into upper chest. Alt: child\'s pose with side reaches 1 min' }, 1);
 
       // Trackers (data-only; UI in P2).
       await db.trackers.add({ name: 'L hip strain',              kind: 'injury',    status: 'active', severity: 2,    side: 'L',  notes: 'aware on BSS' });
