@@ -407,6 +407,30 @@ function alfApp() {
       Object.assign(s, patch);
     },
 
+    /** @param {object[]} sets */
+    tokenFromSets(sets) {
+      return sets.map(s => this.tokenFromSet(s)).join(' / ');
+    },
+
+    /**
+     * Parse a flattened token string (sets joined by " / ") and sync to DB.
+     * Adds or removes set rows to match the token count.
+     * @param {object} perf
+     * @param {string} tokenStr
+     */
+    async applyAllSetsToken(perf, tokenStr) {
+      const tokens = tokenStr.split('/').map(t => t.trim()).filter(Boolean);
+      // Update or add sets to match token count
+      for (let i = 0; i < tokens.length; i++) {
+        if (i >= perf._sets.length) await this.addSet(perf);
+        await this.applySetToken(perf._sets[i], tokens[i]);
+      }
+      // Remove trailing sets if fewer tokens than existing sets
+      while (perf._sets.length > tokens.length && perf._sets.length > 1) {
+        await this.removeSet(perf, perf._sets[perf._sets.length - 1]);
+      }
+    },
+
     sessionDayName(s) {
       // Best-effort: load not pre-cached. Use session record's denorm if present, else fallback.
       return (s && (s.dayName || ('day ' + s.dayId))) || '';
