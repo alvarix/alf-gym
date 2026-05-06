@@ -17,6 +17,17 @@ function alfApp() {
     blocks: [],
     prescriptions: [],
     exercises: [],
+    wishlist: [],
+    showWishlistPanel: false,
+
+    // Sessions
+    sessions: [],
+    activeSessionId: null,
+    activeSession: null,
+    activeSessionPerformances: [],   // [{ ...performance, _block, _sets[] }]
+    endingSession: false,            // shows mood/env panel
+    endMood: null,
+    endEnv: 'gym',
 
     syntax: localStorage.getItem('alfgym.syntax') === '1',
     showArchived: false,
@@ -30,6 +41,7 @@ function alfApp() {
 
     async init() {
       await window.alfdbSeed();
+      await this.loadWishlist();
       window.addEventListener('hashchange', () => this.routeFromHash());
       await this.routeFromHash();
     },
@@ -53,23 +65,26 @@ function alfApp() {
     async routeFromHash() {
       const h = window.location.hash || '#/';
       this.editing = null; this.draftBlock = null; this.draftDay = null;
-      const m = h.match(/^#\/(?:wizard|w\/(\d+)(?:\/d\/(\d+)(?:\/b\/(\d+))?)?)?$/);
+      const m = h.match(/^#\/(?:wizard|wishlist|sessions|s\/(\d+)|w\/(\d+)(?:\/d\/(\d+)(?:\/b\/(\d+))?)?)?$/);
       if (h === '#/' || h === '' || h === '#') { this.view = 'workouts'; await this.loadWorkouts(); return; }
       if (h === '#/wizard') { this.openWizard(); return; }
-      if (m && m[1]) {
-        const workoutId = parseInt(m[1], 10);
+      if (h === '#/wishlist') { await this.loadWishlist(); this.view = 'wishlist'; return; }
+      if (h === '#/sessions') { await this.loadSessions(); await this.loadWorkouts(); this.view = 'sessions'; return; }
+      if (m && m[1]) { await this.openSession(parseInt(m[1], 10)); return; }
+      if (m && m[2]) {
+        const workoutId = parseInt(m[2], 10);
         const w = await window.alfdb.workouts.get(workoutId);
         if (!w) return this.gotoHash('#/');
         this.activeWorkoutId = workoutId;
         await this.loadWorkouts();
         await this.loadDays(workoutId);
-        if (m[2]) {
-          const dayId = parseInt(m[2], 10);
+        if (m[3]) {
+          const dayId = parseInt(m[3], 10);
           this.activeDayId = dayId;
           await this.loadBlocks(dayId);
           await this.loadExercises();
-          if (m[3]) {
-            const blockId = parseInt(m[3], 10);
+          if (m[4]) {
+            const blockId = parseInt(m[4], 10);
             this.activeBlockId = blockId;
             await this.loadPrescriptions(blockId);
             this.view = 'block';
@@ -116,6 +131,289 @@ function alfApp() {
       this.prescriptions = arr;
     },
     async loadExercises() { this.exercises = await window.alfdb.exercises.toArray(); },
+    async loadWishlist() {
+      const arr = await window.alfdb.wishlist.toArray();
+      arr.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+      this.wishlist = arr;
+    },
+
+    // ----- Sessions -----
+    async loadSessions() {
+      const arr = await window.alfdb.sessions.toArray();
+      arr.sort((a, b) => (b.startedAt || '').localeCompare(a.startedAt || ''));
+      this.sessions = arr;
+    },
+
+    async startSessionForDay(dayId) {
+      // Build a session by snapshotting day -> blocks -> prescriptions into performances.
+      const day = await window.alfdb.days.get(dayId);
+      if (!day) return;
+      const blocks = await window.alfdb.blocks.where({ dayId }).toArray();
+      blocks.sort((a, b) => a.order - b.order);
+      let newSessionId = null;
+      await window.alfdb.transaction('rw',
+        [window.alfdb.sessions, window.alfdb.performances, window.alfdb.sets],
+        async () => {
+          newSessionId = await window.alfdb.sessions.add({
+            dayId,
+            workoutId: day.workoutId,
+            startedAt: new Date().toISOString(),
+            endedAt: null,
+            status: 'in_progress',
+            mood: null,
+            env: null,
+            note: ''
+          });
+          let order = 0;
+          for (const b of blocks) {
+            const prescriptions = await window.alfdb.prescriptions.where({ blockId: b.id }).toArray();
+            prescriptions.sort((a, b) => a.order - b.order);
+            for (const p of prescriptions) {
+              order += 1;
+              const ex = await window.alfdb.exercises.get(p.exerciseId);
+              const perfId = await window.alfdb.performances.add({
+                sessionId: newSessionId,
+                prescriptionId: p.id,
+                exerciseId: p.exerciseId,
+                exerciseName: ex ? ex.name : '?',
+                blockId: b.id,
+                blockName: b.name,
+                blockType: b.type,
+                blockOptional: !!b.optional,
+                blockRounds: b.rounds || null,
+                order,
+                prescribedSets: p.sets || 1,
+                prescribedReps: p.reps == null ? '' : String(p.reps),
+                prescribedLoad: p.load || '',
+                prescribedSideScheme: p.sideScheme || 'bilateral',
+                prescribedHoldSec: p.holdSec || null,
+                prescribedNotable: !!p.notable,
+                notes: ''
+              });
+              // Pre-create empty set rows = number of prescribed sets.
+              const numSets = p.sets || 1;
+              for (let i = 1; i <= numSets; i++) {
+                await window.alfdb.sets.add({
+                  performanceId: perfId,
+                  setIndex: i,
+                  reps: '',
+                  load: '',
+                  side: '',
+                  holdSec: null,
+                  notable: false,
+                  done: false,
+                  notes: ''
+                });
+              }
+            }
+          }
+        });
+      this.gotoHash('#/s/' + newSessionId);
+    },
+
+    async openSession(id) {
+      const s = await window.alfdb.sessions.get(id);
+      if (!s) return this.gotoHash('#/');
+      this.activeSessionId = id;
+      this.activeSession = s;
+      const perfs = await window.alfdb.performances.where({ sessionId: id }).toArray();
+      perfs.sort((a, b) => a.order - b.order);
+      // Hydrate sets per performance.
+      for (const p of perfs) {
+        const sets = await window.alfdb.sets.where({ performanceId: p.id }).toArray();
+        sets.sort((a, b) => a.setIndex - b.setIndex);
+        p._sets = sets;
+        const pains = await window.alfdb.painMarks.where({ performanceId: p.id }).toArray();
+        p._pains = pains;
+      }
+      this.activeSessionPerformances = perfs;
+      this.view = 'session';
+      this.endingSession = false;
+    },
+
+    sessionGroupedBlocks() {
+      // Group performances by blockId, preserving order.
+      const groups = [];
+      let last = null;
+      for (const p of this.activeSessionPerformances) {
+        if (!last || last.blockId !== p.blockId) {
+          last = { blockId: p.blockId, blockName: p.blockName, blockType: p.blockType, blockOptional: p.blockOptional, blockRounds: p.blockRounds, performances: [] };
+          groups.push(last);
+        }
+        last.performances.push(p);
+      }
+      return groups;
+    },
+
+    async updateSetField(s, field, value) {
+      const patch = {};
+      patch[field] = value;
+      await window.alfdb.sets.update(s.id, patch);
+      // Reflect locally.
+      s[field] = value;
+    },
+
+    async toggleSetDone(s) {
+      await this.updateSetField(s, 'done', !s.done);
+    },
+
+    async addSet(perf) {
+      const next = (perf._sets[perf._sets.length - 1] || {});
+      const newSet = {
+        performanceId: perf.id,
+        setIndex: perf._sets.length + 1,
+        reps: next.reps || '',
+        load: next.load || '',
+        side: next.side || '',
+        holdSec: next.holdSec || null,
+        notable: false,
+        done: false,
+        notes: ''
+      };
+      const id = await window.alfdb.sets.add(newSet);
+      newSet.id = id;
+      perf._sets.push(newSet);
+    },
+
+    async removeSet(perf, s) {
+      if (perf._sets.length <= 1) { alert('A performance must have at least one set row.'); return; }
+      await window.alfdb.sets.delete(s.id);
+      perf._sets = perf._sets.filter(x => x.id !== s.id);
+    },
+
+    async repeatLastSet(perf) {
+      if (!perf._sets.length) return this.addSet(perf);
+      const last = perf._sets[perf._sets.length - 1];
+      const newSet = {
+        performanceId: perf.id,
+        setIndex: perf._sets.length + 1,
+        reps: last.reps,
+        load: last.load,
+        side: last.side,
+        holdSec: last.holdSec,
+        notable: false,
+        done: true,
+        notes: ''
+      };
+      const id = await window.alfdb.sets.add(newSet);
+      newSet.id = id;
+      perf._sets.push(newSet);
+    },
+
+    async addPainToPerformance(perf) {
+      const sevStr = prompt('Pain severity 1-10:');
+      if (!sevStr) return;
+      const severity = parseInt(sevStr, 10);
+      if (!severity) return;
+      const side = prompt('Side (L / R / both):', 'L') || '';
+      const region = prompt('Region (hip, low back, knee, ...):') || '';
+      const id = await window.alfdb.painMarks.add({
+        sessionId: this.activeSessionId,
+        performanceId: perf.id,
+        severity, side, region,
+        ts: new Date().toISOString()
+      });
+      perf._pains = perf._pains || [];
+      perf._pains.push({ id, sessionId: this.activeSessionId, performanceId: perf.id, severity, side, region });
+      this.showFlash('Pain logged');
+    },
+
+    async updatePerformanceNotes(perf, notes) {
+      await window.alfdb.performances.update(perf.id, { notes });
+      perf.notes = notes;
+    },
+
+    sessionElapsed(s) {
+      if (!s) return '';
+      const start = new Date(s.startedAt);
+      const end = s.endedAt ? new Date(s.endedAt) : new Date();
+      const mins = Math.max(0, Math.round((end - start) / 60000));
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return h ? (h + 'h ' + m + 'm') : (m + 'm');
+    },
+
+    sessionDayName(s) {
+      // Best-effort: load not pre-cached. Use session record's denorm if present, else fallback.
+      return (s && (s.dayName || ('day ' + s.dayId))) || '';
+    },
+
+    sessionWorkoutName(s) {
+      const w = this.workouts.find(x => x.id === s.workoutId);
+      return w ? w.name : '';
+    },
+
+    openEndPanel() {
+      this.endingSession = true;
+      this.endMood = null;
+      this.endEnv = 'gym';
+    },
+    closeEndPanel() { this.endingSession = false; },
+
+    async commitEndSession() {
+      const id = this.activeSessionId;
+      if (!id) return;
+      await window.alfdb.sessions.update(id, {
+        endedAt: new Date().toISOString(),
+        status: 'completed',
+        mood: this.endMood,
+        env: this.endEnv
+      });
+      this.activeSession.endedAt = new Date().toISOString();
+      this.activeSession.status = 'completed';
+      this.activeSession.mood = this.endMood;
+      this.activeSession.env = this.endEnv;
+      this.endingSession = false;
+      this.showFlash('Session saved');
+    },
+
+    async deleteSession(s) {
+      if (!confirm('Delete this session and all its captured data?')) return;
+      const perfs = await window.alfdb.performances.where({ sessionId: s.id }).toArray();
+      for (const p of perfs) {
+        await window.alfdb.sets.where({ performanceId: p.id }).delete();
+      }
+      await window.alfdb.performances.where({ sessionId: s.id }).delete();
+      await window.alfdb.painMarks.where({ sessionId: s.id }).delete();
+      await window.alfdb.sessions.delete(s.id);
+      await this.loadSessions();
+      this.showFlash('Session deleted');
+    },
+
+    // ----- Wishlist actions -----
+    async addToWishlistFromEditor() {
+      const q = (this.editing && this.editing.exerciseQuery || '').trim();
+      if (!q) { alert('Type an exercise name first.'); return; }
+      await window.alfdb.wishlist.add({
+        exerciseName: q,
+        notes: (this.editing.fields.notes || '').trim(),
+        createdAt: new Date().toISOString()
+      });
+      await this.loadWishlist();
+      this.showFlash('Added to wishlist');
+    },
+    async addStandaloneWishlistItem() {
+      const name = prompt('Exercise to wishlist (just the name):');
+      if (!name || !name.trim()) return;
+      await window.alfdb.wishlist.add({
+        exerciseName: name.trim(),
+        notes: '',
+        createdAt: new Date().toISOString()
+      });
+      await this.loadWishlist();
+      this.showFlash('Added to wishlist');
+    },
+    async removeWishlistItem(item) {
+      await window.alfdb.wishlist.delete(item.id);
+      await this.loadWishlist();
+    },
+    async pullFromWishlist(item) {
+      // Open the add-exercise draft with this name pre-filled.
+      await this.openAddExercise();
+      this.editing.exerciseQuery = item.exerciseName;
+      if (item.notes) this.editing.fields.notes = item.notes;
+      // Optionally remove on use; leave it for now so user keeps the wishlist intact until they confirm.
+    },
 
     exerciseName(id) { const ex = this.exercises.find(e => e.id === id); return ex ? ex.name : '?'; },
     workoutName(id) { const w = this.workouts.find(x => x.id === id); return w ? w.name : '?'; },
@@ -469,6 +767,22 @@ function alfApp() {
       this.showFlash('Exercise removed');
     },
 
+    async duplicateExercise(p) {
+      const order = this.prescriptions.length + 1;
+      const copy = { ...p };
+      delete copy.id;
+      copy.order = order;
+      await window.alfdb.prescriptions.add(copy);
+      await this.loadPrescriptions(this.activeBlockId);
+      this.showFlash('Duplicated');
+    },
+
+    async saveAndAddAnother() {
+      // Save current draft, then immediately open a fresh add-exercise draft.
+      await this.saveEdit();
+      await this.openAddExercise();
+    },
+
     async moveExercise(p, dir) {
       const idx = this.prescriptions.findIndex(x => x.id === p.id);
       const swap = this.prescriptions[idx + dir];
@@ -522,23 +836,31 @@ function alfApp() {
     nextStepHint() {
       if (this.view === 'workouts') {
         if (this.visibleWorkouts().length === 0) return { text: 'No active workout. Tap "+ new workout" to start the wizard.' };
-        if (this.visibleWorkouts().length === 1) return { text: 'Tap your workout to open its days.' };
+        if (this.visibleWorkouts().length === 1) return { text: 'Tap your workout to open its days, or jump to Sessions to see history.' };
         return { text: 'Tap a workout to open its days, or fork one to a new revision.' };
       }
       if (this.view === 'workout') {
         const empty = this.days.filter(d => (d._blockCount || 0) === 0);
         if (empty.length) return { text: 'Empty days waiting: ' + empty.map(d => d.name).join(', ') };
-        return { text: 'Tap a day to edit its blocks.' };
+        return { text: 'Tap a day to edit its blocks, or tap ▶ on a day to start a session.' };
       }
       if (this.view === 'day') {
         if (this.blocks.length === 0) return { text: 'Add the first block.' };
         const empty = this.blocks.filter(b => (b._exCount || 0) === 0);
         if (empty.length) return { text: 'Empty blocks: ' + empty.map(b => b.name).join(', ') };
-        return { text: 'All blocks have exercises. Review or reorder.' };
+        return { text: 'All blocks have exercises. Tap ▶ start session above to log this day.' };
       }
       if (this.view === 'block') {
         if (this.prescriptions.length === 0) return { text: 'Add the first exercise.' };
         return { text: 'Tap an exercise title to edit. Tap again to close.' };
+      }
+      if (this.view === 'sessions') {
+        if (this.sessions.length === 0) return { text: 'No sessions yet. Start one from any day.' };
+        return { text: 'Tap a session to view or continue.' };
+      }
+      if (this.view === 'session') {
+        if (this.activeSession && this.activeSession.status === 'in_progress') return { text: 'Capture set values inline. Tap End when finished.' };
+        return { text: 'This session is completed. View only.' };
       }
       return null;
     },

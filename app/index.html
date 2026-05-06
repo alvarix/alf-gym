@@ -61,6 +61,9 @@
       <div class="crumbs">
         <a @click="gotoHash('#/')">Workouts</a>
         <template x-if="view === 'wizard'"><span><span class="sep">›</span><span>new workout</span></span></template>
+        <template x-if="view === 'wishlist'"><span><span class="sep">›</span><span>wishlist</span></span></template>
+        <template x-if="view === 'sessions'"><span><span class="sep">›</span><span>sessions</span></span></template>
+        <template x-if="view === 'session'"><span><span class="sep">›</span><a @click="gotoHash('#/sessions')">sessions</a><span class="sep">›</span><span x-text="activeSession ? (activeSession.startedAt || '').slice(0,10) : ''"></span></span></template>
         <template x-if="view === 'workout' || view === 'day' || view === 'block'">
           <span><span class="sep">›</span><a @click="gotoHash('#/w/' + activeWorkoutId)" x-text="activeWorkout() ? activeWorkout().name : '?'"></a></span>
         </template>
@@ -77,6 +80,8 @@
         <button :class="!syntax ? 'on' : ''" @click="setSyntax(false)">en</button>
         <button :class="syntax ? 'on' : ''" @click="setSyntax(true)">syn</button>
       </div>
+      <button class="tiny" @click="gotoHash('#/sessions')" title="sessions">⏱</button>
+      <button class="tiny" @click="gotoHash('#/wishlist')" title="wishlist">★ <span x-show="wishlist.length > 0" x-text="wishlist.length"></span></button>
       <button class="tiny" @click="showJson = !showJson">json</button>
     </div>
   </div>
@@ -151,6 +156,248 @@
         <li>Tap an existing workout to open its days.</li>
         <li>Toggle <strong>show archived</strong> to refer back to past workouts.</li>
       </ol>
+    </div>
+  </div>
+
+  <!-- Sessions list -->
+  <div x-show="view === 'sessions'">
+    <div class="row spread" style="margin-bottom: 8px;">
+      <h2 style="margin: 0;">Sessions</h2>
+    </div>
+    <p class="muted" style="font-size: 13px; margin-bottom: 12px;">
+      Captured sessions, most recent first. Tap to view or continue.
+    </p>
+
+    <template x-if="sessions.length === 0">
+      <div class="empty-state">
+        <div class="text">No sessions yet. Start one from any day.</div>
+        <button class="primary" @click="gotoHash('#/')">go to workouts</button>
+      </div>
+    </template>
+
+    <template x-for="s in sessions" :key="s.id">
+      <div class="ix-card">
+        <div class="row spread">
+          <div @click="gotoHash('#/s/' + s.id)" style="cursor: pointer; flex: 1; min-width: 0;">
+            <div class="title">
+              <span x-text="(s.startedAt || '').slice(0, 10)"></span>
+              <template x-if="s.status === 'in_progress'">
+                <span class="pill-tag" style="background: var(--accent-bg); color: var(--accent);">in progress</span>
+              </template>
+              <template x-if="s.status === 'completed'">
+                <span class="pill-tag" style="background: var(--surface-2); color: var(--text-2);">complete</span>
+              </template>
+            </div>
+            <div class="meta">
+              <span x-text="sessionWorkoutName(s)"></span>
+              <span> &middot; </span>
+              <span x-text="sessionElapsed(s)"></span>
+              <span x-show="s.env"> &middot; <span x-text="s.env"></span></span>
+              <span x-show="s.mood"> &middot; mood <span x-text="s.mood"></span>/5</span>
+            </div>
+          </div>
+          <div class="actions">
+            <button @click="deleteSession(s)" title="delete">×</button>
+            <button @click="gotoHash('#/s/' + s.id)">open</button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Session capture view -->
+  <div x-show="view === 'session'">
+    <template x-if="activeSession">
+      <div>
+        <div class="row spread" style="margin-bottom: 8px;">
+          <div>
+            <h2 style="margin: 0;" x-text="(activeSession.startedAt || '').slice(0, 10)"></h2>
+            <div class="muted" style="font-size: 12px;">
+              <span x-text="sessionWorkoutName(activeSession)"></span>
+              <span> &middot; </span>
+              <span x-text="sessionElapsed(activeSession)"></span>
+              <template x-if="activeSession.status === 'in_progress'"><span> &middot; live</span></template>
+              <template x-if="activeSession.status === 'completed'"><span> &middot; complete</span></template>
+            </div>
+          </div>
+          <div class="row tight">
+            <template x-if="activeSession.status === 'in_progress'">
+              <button class="primary" @click="openEndPanel()" style="background: var(--text); color: var(--surface);">end session</button>
+            </template>
+          </div>
+        </div>
+
+        <!-- End panel -->
+        <div x-show="endingSession" class="ix-card draft" style="margin-bottom: 12px;">
+          <div class="inline-form-head">End session</div>
+          <div class="form-row">
+            <label>mood</label>
+            <div class="row tight">
+              <template x-for="n in [1,2,3,4,5]" :key="n">
+                <button @click="endMood = n" :style="endMood === n ? 'background: var(--accent-bg); color: var(--accent); font-weight: 500;' : ''" x-text="n"></button>
+              </template>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>environment</label>
+            <div class="row tight">
+              <template x-for="e in ['gym','home','park','other']" :key="e">
+                <button @click="endEnv = e" :style="endEnv === e ? 'background: var(--accent-bg); color: var(--accent); font-weight: 500;' : ''" x-text="e"></button>
+              </template>
+            </div>
+          </div>
+          <div class="row" style="gap: 8px; margin-top: 8px;">
+            <button class="grow" @click="closeEndPanel()">cancel</button>
+            <button class="grow primary" @click="commitEndSession()">save and end</button>
+          </div>
+        </div>
+
+        <!-- Blocks and performances -->
+        <template x-for="(g, gi) in sessionGroupedBlocks()" :key="g.blockId">
+          <div style="margin-bottom: 14px;">
+            <div class="group-head">
+              <span class="mono" x-text="(gi+1) + '.'"></span>
+              <span x-text="g.blockName"></span>
+              <template x-if="g.blockType === 'circuit'">
+                <span class="pill-tag" style="background: var(--accent-bg); color: var(--accent);">circuit · <span x-text="g.blockRounds"></span> rounds</span>
+              </template>
+              <template x-if="g.blockOptional">
+                <span class="pill-tag optional">optional</span>
+              </template>
+            </div>
+            <template x-for="(perf, pi) in g.performances" :key="perf.id">
+              <div class="ix-card" :class="perf.blockOptional ? 'optional-block' : ''">
+                <div class="title">
+                  <span class="mono dim" x-text="(gi+1) + '.' + (pi+1)"></span>
+                  <span x-text="perf.exerciseName"></span>
+                  <template x-if="perf.prescribedNotable && !syntax">
+                    <span class="pill-tag notable">notable</span>
+                  </template>
+                </div>
+                <div class="meta mono" style="margin-bottom: 6px;">
+                  prescribed:
+                  <span x-text="perf.prescribedLoad"></span>
+                  <template x-if="perf.prescribedReps">
+                    <span> · <span x-text="perf.prescribedReps"></span> reps</span>
+                  </template>
+                  <template x-if="perf.prescribedHoldSec">
+                    <span> · <span x-text="perf.prescribedHoldSec"></span>s hold</span>
+                  </template>
+                  <span> · <span x-text="perf.prescribedSets"></span> sets</span>
+                </div>
+
+                <!-- Set rows -->
+                <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                  <thead>
+                    <tr style="color: var(--text-3); font-size: 11px;">
+                      <th style="text-align: left; width: 24px; padding: 2px 4px 2px 0;">#</th>
+                      <th style="text-align: left; padding: 2px 4px;">reps</th>
+                      <th style="text-align: left; padding: 2px 4px;">load</th>
+                      <th style="text-align: left; padding: 2px 4px;">side</th>
+                      <th style="width: 30px; padding: 2px 4px;">done</th>
+                      <th style="width: 24px; padding: 2px 0;"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="s in perf._sets" :key="s.id">
+                      <tr>
+                        <td class="mono dim" style="padding: 2px 4px 2px 0;" x-text="s.setIndex"></td>
+                        <td style="padding: 2px 4px;">
+                          <input :value="s.reps" @change="updateSetField(s, 'reps', $event.target.value)" :disabled="activeSession.status !== 'in_progress'"
+                            style="height: 28px; padding: 0 6px; font-family: var(--mono); font-size: 13px;" />
+                        </td>
+                        <td style="padding: 2px 4px;">
+                          <input :value="s.load" @change="updateSetField(s, 'load', $event.target.value)" :disabled="activeSession.status !== 'in_progress'"
+                            style="height: 28px; padding: 0 6px; font-family: var(--mono); font-size: 13px;" />
+                        </td>
+                        <td style="padding: 2px 4px;">
+                          <select :value="s.side" @change="updateSetField(s, 'side', $event.target.value)" :disabled="activeSession.status !== 'in_progress'"
+                            style="height: 28px; padding: 0 4px; font-size: 12px;">
+                            <option value=""></option>
+                            <option value="L">L</option>
+                            <option value="R">R</option>
+                            <option value="both">both</option>
+                          </select>
+                        </td>
+                        <td style="padding: 2px 4px; text-align: center;">
+                          <input type="checkbox" :checked="s.done" @change="toggleSetDone(s)" :disabled="activeSession.status !== 'in_progress'" style="width: auto; height: auto; margin: 0;" />
+                        </td>
+                        <td style="padding: 2px 0; text-align: right;">
+                          <button class="tiny" x-show="activeSession.status === 'in_progress'" @click="removeSet(perf, s)" title="remove set">×</button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+
+                <div class="row tight" style="margin-top: 6px; gap: 6px; flex-wrap: wrap;" x-show="activeSession.status === 'in_progress'">
+                  <button class="tiny" @click="addSet(perf)">+ set</button>
+                  <button class="tiny" @click="repeatLastSet(perf)" title="copy last set's values, mark done">repeat last</button>
+                  <button class="tiny" @click="addPainToPerformance(perf)">$ pain</button>
+                </div>
+
+                <template x-if="perf._pains && perf._pains.length">
+                  <div class="row tight wrap" style="margin-top: 6px;">
+                    <template x-for="pn in perf._pains" :key="pn.id">
+                      <span class="pill-tag" style="background: #fce4e4; color: #a04040;">$<span x-text="pn.severity"></span> <span x-text="pn.side"></span> <span x-text="pn.region"></span></span>
+                    </template>
+                  </div>
+                </template>
+
+                <div class="form-row" style="margin-top: 6px;">
+                  <label>note</label>
+                  <input :value="perf.notes || ''" @change="updatePerformanceNotes(perf, $event.target.value)" placeholder="optional" :disabled="activeSession.status !== 'in_progress'" />
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <div x-show="activeSession.status === 'in_progress'" class="ix-card" style="background: var(--accent-bg); border-color: transparent; text-align: center;">
+          <button class="primary" @click="openEndPanel()" style="background: var(--text); color: var(--surface);">end session</button>
+        </div>
+      </div>
+    </template>
+
+    <div class="wizard-text">
+      <strong>Where you are:</strong> live capture for one session. Each set row holds your actual reps and load. Tap <strong>done</strong> to mark a set complete. Use <strong>repeat last</strong> for unchanged sets, <strong>+ set</strong> for an extra round, <strong>$ pain</strong> to log a pain mark on this exercise. End when finished.
+    </div>
+  </div>
+
+  <!-- Wishlist view -->
+  <div x-show="view === 'wishlist'">
+    <div class="row spread" style="margin-bottom: 8px;">
+      <h2 style="margin: 0;">Wishlist</h2>
+      <button class="new-btn" @click="addStandaloneWishlistItem()">+ add</button>
+    </div>
+    <p class="muted" style="font-size: 13px; margin-bottom: 12px;">
+      Single exercises you want to try later. Surfaced when designing a block. Add via the <strong>★ wishlist</strong> button in the exercise editor, or with <strong>+ add</strong> here.
+    </p>
+
+    <template x-if="wishlist.length === 0">
+      <div class="empty-state">
+        <div class="text">Wishlist is empty.</div>
+        <button class="primary" @click="addStandaloneWishlistItem()">+ add an exercise</button>
+      </div>
+    </template>
+
+    <template x-for="item in wishlist" :key="item.id">
+      <div class="ix-card">
+        <div class="row spread">
+          <div style="flex: 1; min-width: 0;">
+            <div class="title" x-text="item.exerciseName"></div>
+            <div class="meta" x-show="item.notes" x-text="item.notes" style="font-style: italic;"></div>
+            <div class="dim" style="font-size: 11px;" x-text="'added ' + (item.createdAt || '').slice(0, 10)"></div>
+          </div>
+          <div class="actions">
+            <button @click="removeWishlistItem(item)" title="remove">×</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <div class="wizard-text">
+      <strong>Where you are:</strong> the wishlist of single exercises queued up for future blocks. The wishlist is global; pull items into any block from the <strong>★ from wishlist</strong> panel that appears at the top of a block view when items exist.
     </div>
   </div>
 
@@ -252,6 +499,7 @@
                 </div>
               </div>
               <div class="actions">
+                <button @click="startSessionForDay(d.id)" title="start session" style="background: var(--accent-bg); color: var(--accent); font-weight: 500;">▶</button>
                 <button @click="moveDay(d, -1)" title="up">↑</button>
                 <button @click="moveDay(d, 1)" title="down">↓</button>
                 <button @click="gotoHash('#/w/' + activeWorkoutId + '/d/' + d.id)">edit</button>
@@ -297,7 +545,10 @@
   <div x-show="view === 'day'">
     <div class="row spread" style="margin-bottom: 8px;">
       <h2 style="margin: 0;" x-text="activeDay() ? activeDay().name : ''"></h2>
-      <button class="new-btn" @click="openDraftBlock()" x-show="!draftBlock">+ block</button>
+      <div class="row tight">
+        <button @click="startSessionForDay(activeDayId)" title="start a session for this day" style="background: var(--accent-bg); color: var(--accent); font-weight: 500;">▶ start session</button>
+        <button class="new-btn" @click="openDraftBlock()" x-show="!draftBlock">+ block</button>
+      </div>
     </div>
 
     <template x-if="blocks.length === 0 && !draftBlock">
@@ -384,6 +635,29 @@
       <template x-if="activeBlock() && activeBlock().optional"><span> &middot; optional</span></template>
     </p>
 
+    <!-- From wishlist surface -->
+    <div x-show="wishlist.length > 0" class="ix-card" style="background: var(--surface-2); border-style: dashed; margin-bottom: 8px;">
+      <div class="row spread" style="cursor: pointer;" @click="showWishlistPanel = !showWishlistPanel">
+        <div>
+          <strong style="font-weight: 500; font-size: 13px;">★ from wishlist</strong>
+          <span class="muted" style="font-size: 12px;" x-text="'(' + wishlist.length + ')'"></span>
+        </div>
+        <span class="dim" x-text="showWishlistPanel ? '▾' : '▸'"></span>
+      </div>
+      <div x-show="showWishlistPanel" style="margin-top: 8px;">
+        <div class="muted" style="font-size: 11px; margin-bottom: 6px;">tap to drop into this block as a new exercise:</div>
+        <template x-for="item in wishlist" :key="item.id">
+          <div class="row spread" style="padding: 4px 0; border-top: 0.5px solid var(--border); font-size: 13px;">
+            <div @click="pullFromWishlist(item); showWishlistPanel = false;" style="cursor: pointer; flex: 1;">
+              <span x-text="item.exerciseName"></span>
+              <span class="dim" x-show="item.notes" x-text="'· ' + item.notes" style="font-size: 11px;"></span>
+            </div>
+            <button class="tiny" @click.stop="removeWishlistItem(item)" title="remove from wishlist">×</button>
+          </div>
+        </template>
+      </div>
+    </div>
+
     <template x-if="prescriptions.length === 0 && !(editing && !editing.id)">
       <div class="empty-state">
         <div class="text">No exercises yet. Add the first one.</div>
@@ -407,6 +681,7 @@
           <div class="actions" @click.stop>
             <button @click="moveExercise(p, -1)">↑</button>
             <button @click="moveExercise(p, 1)">↓</button>
+            <button @click="duplicateExercise(p)" title="duplicate">⎘</button>
             <button @click="deleteExercise(p)">×</button>
           </div>
         </div>
@@ -461,8 +736,9 @@
               </div>
 
               <div class="form-row"><label>notes</label><input x-model="editing.fields.notes" placeholder="optional" /></div>
-              <div class="row" style="gap: 8px; margin-top: 8px;">
-                <button class="grow" @click="cancelEdit()">cancel</button>
+              <div class="row tight" style="gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+                <button @click="cancelEdit()">cancel</button>
+                <button @click="addToWishlistFromEditor()" title="save the name to the wishlist">★ wishlist</button>
                 <button class="grow primary" @click="saveEdit()">save</button>
               </div>
             </div>
@@ -516,9 +792,11 @@
           </div>
 
           <div class="form-row"><label>notes</label><input x-model="editing.fields.notes" placeholder="optional" /></div>
-          <div class="row" style="gap: 8px; margin-top: 8px;">
-            <button class="grow" @click="cancelEdit()">cancel</button>
-            <button class="grow primary" @click="saveEdit()">add exercise</button>
+          <div class="row tight" style="gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+            <button @click="cancelEdit()">cancel</button>
+            <button @click="addToWishlistFromEditor()" title="save the name to the wishlist instead of this block">★ wishlist</button>
+            <button class="grow primary" @click="saveEdit()">add</button>
+            <button class="grow primary" @click="saveAndAddAnother()" title="save this and immediately add another">add &amp; another</button>
           </div>
         </div>
       </template>

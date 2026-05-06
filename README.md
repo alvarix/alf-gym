@@ -4,7 +4,7 @@ A mobile-first PWA for tracking gym sessions. Offline-first, fast capture, histo
 
 ## Status
 
-P1.5 — wired Template Builder prototype complete (`app/`). Next: SvelteKit migration to `web/`. See `docs/migration-sveltekit.md` for the plan.
+r4.0 — sessions capture flow complete. Builder (workouts, days, blocks, exercises, wishlist) and session capture (start, live set entry, pain marks, end with mood/env) all working. Next: r4.1 prefill last-cycle actuals + chevron increments.
 
 ## Repo layout
 
@@ -17,11 +17,12 @@ docs/
   decisions.md            ADR-lite log
   notation.md             canonical syntax reference
   migration-sveltekit.md  target stack and migration steps
-  user-stories.md         P1-P2 user stories
+  user-stories.md         builder + sessions + history stories
   review-r3.2.md          design review findings and backlog
+  handoff.md              state snapshot for the next model
 tests/
   README.md               planned test approach (Vitest + Playwright)
-app/                      round-3 wired prototype (Alpine + Dexie)
+app/                      wired prototype (Alpine + Dexie, no build step)
 ```
 
 Mockup rounds (v1, v2) are excluded from the repo. See CHANGELOG for what each round covered.

@@ -28,6 +28,19 @@ db.version(3).stores({
   meta:          '&key'
 });
 
+// v4: add wishlist table.
+db.version(4).stores({
+  wishlist:      '++id, exerciseName, createdAt'
+});
+
+// v5: sessions and capture data.
+db.version(5).stores({
+  sessions:     '++id, dayId, workoutId, startedAt, endedAt, status, mood, env',
+  performances: '++id, sessionId, prescriptionId, exerciseId, blockId, order',
+  sets:         '++id, performanceId, setIndex',
+  painMarks:    '++id, sessionId, performanceId, ts'
+});
+
 // Day skeletons by group key.
 window.DAY_SKELETONS = {
   A: ['Warmup', 'Squat', 'Push', 'Anti-Rotation', 'Plyo'],
@@ -139,6 +152,11 @@ async function resetAll() {
     db.exercises.clear(),
     db.prescriptions.clear(),
     db.trackers.clear(),
+    db.wishlist.clear(),
+    db.sessions.clear(),
+    db.performances.clear(),
+    db.sets.clear(),
+    db.painMarks.clear(),
     db.meta.clear()
   ]);
   await seedIfEmpty();

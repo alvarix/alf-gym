@@ -2,6 +2,48 @@
 
 All notable changes to alf-gym are recorded here. Newest entries on top.
 
+## 2026-04-30 r4.0 (sessions: capture flow lands)
+
+### Added
+- **Schema v5** for capture: `sessions`, `performances`, `sets`, `painMarks`. Session reset clears all four.
+- **Start a session from a Day**: `▶` button on each day card in the Workout view, plus a `▶ start session` button on the Day view. Creates a session and snapshots the day's blocks/prescriptions into performances with denormalized exercise/block names. Pre-creates one set row per prescribed set.
+- **Live capture view** at `#/s/{id}`. For each performance:
+  - prescribed values shown as the row meta
+  - one input row per set: reps, load, side (L/R/both), done checkbox
+  - `+ set`, `repeat last`, `$ pain` buttons
+  - per-performance notes field
+  - pain marks render as colored chips beneath the row
+- **Sessions list** at `#/sessions`. Latest first. Status pill (in progress / complete). Tap to open. Trash icon to delete (purges performances, sets, pain marks).
+- **End session panel**: tap `end session` to set mood (1-5) and environment (gym / home / park / other). Stamps `endedAt` and flips status to `completed`.
+- Menubar adds a `⏱` chip linking to the sessions list.
+
+### Behavior
+- Completed sessions are read-only: inputs disable, action buttons hide.
+- Capture is autosaved on `change` events; no separate "save" needed.
+- Time elapsed renders live for in-progress sessions, static for completed.
+
+### Backlog still open
+- **Prefill last cycle** values into new set rows (currently sets start empty; `repeat last` is the workaround)
+- **Drop-in blocks** (PT routines droppable mid-session)
+- **Pain log alongside last week's records** in the per-exercise view
+- **Supersets / paired exercises** (own focused round)
+- **Per-exercise history view** with chart and timeline
+
+## 2026-04-30 r3.5 (polish: save & another, duplicate, wishlist)
+
+### Added
+- **Save & another** button on the add-exercise form. Commits the current draft and immediately opens a fresh one, focused on the exercise name. Removes the friction of re-tapping `+ exercise` for each row.
+- **Duplicate exercise** action (`⎘`) on each prescription row. Copies the prescription with all fields and orders it at the end of the block.
+- **Wishlist** primitive. New `wishlist` Dexie store at schema v4. Items are exercise names with optional notes.
+  - Add via `★ wishlist` button in the exercise editor (saves the typed name without committing to the block).
+  - Or via `+ add` on the wishlist view (`#/wishlist`).
+  - Surface in the block view: when wishlist has items, a collapsible `★ from wishlist` panel appears above the prescriptions list. Tap an item to drop it into the current block as a new exercise draft (pre-filling name and notes). Item stays in the wishlist until you remove it.
+  - Menubar shows a `★` chip with the wishlist count, linking to the wishlist view.
+
+### Backlog still open
+- **Supersets / paired exercises** within a linear block (deferred to its own focused round).
+- **Sessions** (capture flow on top of the builder), with drop-in blocks and last-week pain log layered in.
+
 ## 2026-04-30 r3.4 (en/syn split, notable as tag, toggle close, optional)
 
 ### Changed

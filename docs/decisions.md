@@ -2,6 +2,40 @@
 
 ADR-lite. Each entry: date, decision, context, alternatives considered, consequences.
 
+## 2026-04-30 r4.0: Sessions snapshot the prescription into a Performance
+
+**Decision:** When a session starts, copy the prescribed values (load, reps, sets, side, hold, notable, exercise name, block name, block type) onto each Performance row. Performances also keep `prescriptionId` for traceability, but the displayed and historical values use the snapshot, not the live prescription.
+
+**Context:** Without snapshotting, editing a prescription later silently rewrites past sessions' "prescribed" values. That's wrong for history.
+
+**Consequences:** A bit more data per session, but small. Fork already copies prescriptions; the snapshot pattern is consistent. Future template changes don't disturb past sessions.
+
+## 2026-04-30 r4.0: Capture autosaves on change
+
+**Decision:** Set values write to IndexedDB on the input's `change` event. No separate save button.
+
+**Context:** Mid-workout, a save button is friction. Want fewer taps.
+
+**Consequences:** Errors are silent if the write fails. Add user feedback if this becomes an issue. Single-user IndexedDB writes are fast and reliable enough.
+
+## 2026-04-30 r3.5: Wishlist as a global single-exercise queue
+
+**Decision:** Add a `wishlist` table holding lightweight entries (exerciseName + optional notes). Surface it in the block view as a collapsible panel when items exist, on the menubar as a `★` chip with count, and at `#/wishlist` as a dedicated view. Pulling an item drops it into the active block's add-exercise draft pre-filled.
+
+**Context:** User feedback: "add single exercise - add to wishlist feature that is exposed when creating a new day". Real workflow: while designing a block you remember an exercise you want to try. Stash it without forcing a full prescription right then.
+
+**Alternatives:** Store wishlist items as full prescription templates (sets, reps, load) detached from a block. Rejected as too much commitment for a wishlist; the user can decide those values when they pull the item into a block.
+
+**Consequences:** Schema v4 adds the wishlist store. Pulled items are not auto-removed; the user keeps the wishlist intact until they explicitly clear an entry. Future: wishlist surface on the day-creation flow, possibly an "add multiple from wishlist" picker.
+
+## 2026-04-30 r3.5: Save & another / Duplicate exercise
+
+**Decision:** Add `save & another` button on the add-exercise form (saves current then re-opens fresh draft). Add a duplicate button on each exercise row.
+
+**Context:** Backlog item from r3.2 review. Designing a block of 5 exercises was tedious; each save closed the form.
+
+**Consequences:** None significant; both are pure UX wins.
+
 ## 2026-04-30 r3.4: En vs syn modes reshape the form, not just the display
 
 **Decision:** En mode and syn mode show different forms. En mode = discrete fields, no syntax tokens visible (load is split into kind + value). Syn mode = single mono token input covering load, reps, hold, sets, side, notable.
