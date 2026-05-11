@@ -18,6 +18,7 @@ If running a local server (e.g. `python3 -m http.server`), styles work because `
 - Persisted to IndexedDB (Dexie). Idempotent seed: re-loads do not duplicate data.
 - App-wide `en | syn` toggle in the header.
 - Exercise picker is an omnibox (type to search, type a new name to create).
+- In-session **add / remove exercise** with three-way scope: *session only* (snapshot, prescription not touched), *to template* (also writes the underlying prescription), or *fork* (deep-copies the workout first, then writes to the fork and re-points the session).
 
 ## What it does not do (yet)
 

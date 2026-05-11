@@ -43,6 +43,10 @@ function alfApp() {
     importError: '',
     hasUndo: !!localStorage.getItem('alfgym.lastBackup'),
 
+    // Partial sessions (Phase B): inline add/remove exercise drafts.
+    sessionAdd: null,     // { blockId, exerciseQuery, sets, reps, load, sideScheme, holdSec, notable, notes }
+    sessionRemove: null,  // { perfId }
+
     editing: null,
     draftBlock: null,
     draftDay: null,
@@ -218,6 +222,7 @@ function alfApp() {
               blockType: b.type,
               blockOptional: !!b.optional,
               blockRounds: b.rounds || null,
+              blockRestBetweenRoundsSec: b.restBetweenRoundsSec || null,
               order,
               prescribedSets: p.sets || 1,
               prescribedReps: p.reps == null ? '' : String(p.reps),
@@ -362,6 +367,236 @@ function alfApp() {
     async updatePerformanceNotes(perf, notes) {
       await window.alfdb.performances.update(perf.id, { notes });
       perf.notes = notes;
+    },
+
+    // ----- Phase B: partial sessions (add/remove exercise mid-session) -----
+
+    openSessionAdd(blockId) {
+      this.sessionAdd = {
+        blockId,
+        exerciseQuery: '',
+        sets: 3,
+        reps: 8,
+        load: '',
+        sideScheme: 'bilateral',
+        holdSec: null,
+        notable: false,
+        notes: ''
+      };
+    },
+
+    cancelSessionAdd() { this.sessionAdd = null; },
+
+    openSessionRemove(perf) { this.sessionRemove = { perfId: perf.id }; },
+    cancelSessionRemove() { this.sessionRemove = null; },
+
+    /**
+     * Fork the workout backing the active session. Deep-copies workout/days/
+     * blocks/prescriptions; re-points session.workoutId, session.dayId, and
+     * every performance row in the session to the corresponding entities in
+     * the new fork. Returns the id maps so a follow-up template mutation
+     * (add/remove/edit) targets the fork instead of the original.
+     * @returns {Promise<{newWorkoutId, blockIdMap, prescriptionIdMap, dayIdMap}|null>}
+     */
+    async forkSessionWorkout() {
+      const session = this.activeSession;
+      if (!session) return null;
+      const oldWorkout = await window.alfdb.workouts.get(session.workoutId);
+      if (!oldWorkout) return null;
+
+      const blockIdMap = {};
+      const prescriptionIdMap = {};
+      const dayIdMap = {};
+      let newWorkoutId = null;
+      const newName = this.suggestForkName(oldWorkout.name);
+
+      await window.alfdb.transaction('rw',
+        [window.alfdb.workouts, window.alfdb.days, window.alfdb.blocks, window.alfdb.prescriptions, window.alfdb.sessions, window.alfdb.performances],
+        async () => {
+          newWorkoutId = await window.alfdb.workouts.add({
+            name: newName, parentId: oldWorkout.id, status: 'active', isCurrent: 1, createdAt: new Date().toISOString()
+          });
+          const oldDays = await window.alfdb.days.where({ workoutId: oldWorkout.id }).toArray();
+          for (const d of oldDays) {
+            const newDayId = await window.alfdb.days.add({ workoutId: newWorkoutId, groupKey: d.groupKey, name: d.name, isAlt: d.isAlt, order: d.order });
+            dayIdMap[d.id] = newDayId;
+            const oldBlocks = await window.alfdb.blocks.where({ dayId: d.id }).toArray();
+            for (const b of oldBlocks) {
+              const newBlockId = await window.alfdb.blocks.add({
+                dayId: newDayId, name: b.name, type: b.type, optional: !!b.optional,
+                rounds: b.rounds, restBetweenRoundsSec: b.restBetweenRoundsSec, order: b.order
+              });
+              blockIdMap[b.id] = newBlockId;
+              const oldP = await window.alfdb.prescriptions.where({ blockId: b.id }).toArray();
+              for (const p of oldP) {
+                const newPId = await window.alfdb.prescriptions.add({
+                  blockId: newBlockId, exerciseId: p.exerciseId, sets: p.sets, reps: p.reps, holdSec: p.holdSec,
+                  sideScheme: p.sideScheme, load: p.load, notable: !!p.notable,
+                  notes: p.notes || '', order: p.order
+                });
+                prescriptionIdMap[p.id] = newPId;
+              }
+            }
+          }
+          await window.alfdb.workouts.update(oldWorkout.id, { isCurrent: 0 });
+
+          const sessionPerfs = await window.alfdb.performances.where({ sessionId: session.id }).toArray();
+          for (const perf of sessionPerfs) {
+            const patch = {};
+            if (perf.blockId && blockIdMap[perf.blockId]) patch.blockId = blockIdMap[perf.blockId];
+            if (perf.prescriptionId && prescriptionIdMap[perf.prescriptionId]) patch.prescriptionId = prescriptionIdMap[perf.prescriptionId];
+            if (Object.keys(patch).length) await window.alfdb.performances.update(perf.id, patch);
+          }
+
+          const newDayId = dayIdMap[session.dayId] || session.dayId;
+          await window.alfdb.sessions.update(session.id, { workoutId: newWorkoutId, dayId: newDayId });
+        });
+
+      this.activeSession.workoutId = newWorkoutId;
+      this.activeSession.dayId = dayIdMap[this.activeSession.dayId] || this.activeSession.dayId;
+      for (const perf of this.activeSessionPerformances) {
+        if (perf.blockId && blockIdMap[perf.blockId]) perf.blockId = blockIdMap[perf.blockId];
+        if (perf.prescriptionId && prescriptionIdMap[perf.prescriptionId]) perf.prescriptionId = prescriptionIdMap[perf.prescriptionId];
+      }
+      return { newWorkoutId, blockIdMap, prescriptionIdMap, dayIdMap };
+    },
+
+    /**
+     * Resolve an exercise by name (case-insensitive). Creates a new exercise
+     * library entry if no match exists.
+     * @param {string} query
+     * @returns {Promise<object|null>}
+     */
+    async resolveExerciseByName(query) {
+      const q = (query || '').trim();
+      if (!q) return null;
+      await this.loadExercises();
+      let ex = this.exercises.find(e => e.name.toLowerCase() === q.toLowerCase());
+      if (!ex) {
+        const id = await window.alfdb.exercises.add({ name: q, parentId: null, category: '', equipment: '' });
+        await this.loadExercises();
+        ex = this.exercises.find(e => e.id === id);
+      }
+      return ex;
+    },
+
+    /**
+     * Commit the sessionAdd draft with the given scope.
+     * @param {'session'|'template'|'fork'} scope
+     */
+    async commitSessionAdd(scope) {
+      if (!this.sessionAdd) return;
+      const draft = this.sessionAdd;
+      const ex = await this.resolveExerciseByName(draft.exerciseQuery);
+      if (!ex) { alert('Type or pick an exercise name.'); return; }
+
+      let targetBlockId = draft.blockId;
+      if (scope === 'fork') {
+        const r = await this.forkSessionWorkout();
+        if (!r) return;
+        targetBlockId = r.blockIdMap[draft.blockId] || draft.blockId;
+      }
+
+      const block = await window.alfdb.blocks.get(targetBlockId);
+      if (!block) { alert('Block not found.'); return; }
+
+      const numSets = parseInt(draft.sets, 10) || 1;
+      const holdSec = draft.holdSec ? parseInt(draft.holdSec, 10) : null;
+      let prescriptionId = null;
+
+      if (scope === 'template' || scope === 'fork') {
+        const orderInBlock = await window.alfdb.prescriptions.where({ blockId: targetBlockId }).count();
+        prescriptionId = await window.alfdb.prescriptions.add({
+          blockId: targetBlockId,
+          exerciseId: ex.id,
+          sets: numSets,
+          reps: draft.reps === '' || draft.reps == null ? null : draft.reps,
+          load: draft.load || '',
+          sideScheme: draft.sideScheme || 'bilateral',
+          holdSec,
+          notable: !!draft.notable,
+          notes: draft.notes || '',
+          order: orderInBlock + 1
+        });
+      }
+
+      const sessionOrder = this.activeSessionPerformances
+        .reduce((max, p) => Math.max(max, p.order || 0), 0) + 1;
+
+      const perfRow = {
+        sessionId: this.activeSessionId,
+        prescriptionId,
+        exerciseId: ex.id,
+        exerciseName: ex.name,
+        blockId: targetBlockId,
+        blockName: block.name,
+        blockType: block.type,
+        blockOptional: !!block.optional,
+        blockRounds: block.rounds || null,
+        blockRestBetweenRoundsSec: block.restBetweenRoundsSec || null,
+        order: sessionOrder,
+        prescribedSets: numSets,
+        prescribedReps: draft.reps == null ? '' : String(draft.reps),
+        prescribedLoad: draft.load || '',
+        prescribedSideScheme: draft.sideScheme || 'bilateral',
+        prescribedHoldSec: holdSec,
+        prescribedNotable: !!draft.notable,
+        notes: ''
+      };
+      const perfId = await window.alfdb.performances.add(perfRow);
+
+      const newSets = [];
+      for (let i = 1; i <= numSets; i++) {
+        const setId = await window.alfdb.sets.add({
+          performanceId: perfId, setIndex: i,
+          reps: '', load: '', side: '', holdSec: null,
+          notable: false, done: false, prefilled: false, notes: ''
+        });
+        newSets.push({ id: setId, performanceId: perfId, setIndex: i, reps: '', load: '', side: '', holdSec: null, notable: false, done: false, prefilled: false, notes: '' });
+      }
+
+      const newPerf = { id: perfId, ...perfRow, _sets: newSets, _pains: [] };
+      let insertIdx = this.activeSessionPerformances.length;
+      for (let i = this.activeSessionPerformances.length - 1; i >= 0; i--) {
+        if (this.activeSessionPerformances[i].blockId === targetBlockId) {
+          insertIdx = i + 1;
+          break;
+        }
+      }
+      this.activeSessionPerformances.splice(insertIdx, 0, newPerf);
+
+      this.sessionAdd = null;
+      this.showFlash('Added (' + scope + ')');
+    },
+
+    /**
+     * Commit the sessionRemove draft with the given scope.
+     * @param {'session'|'template'|'fork'} scope
+     */
+    async commitSessionRemove(scope) {
+      if (!this.sessionRemove) return;
+      const perf = this.activeSessionPerformances.find(p => p.id === this.sessionRemove.perfId);
+      if (!perf) { this.sessionRemove = null; return; }
+
+      if (scope === 'fork') {
+        const r = await this.forkSessionWorkout();
+        if (!r) return;
+        // perf reference was mutated in-place to point at fork ids.
+      }
+
+      await window.alfdb.transaction('rw',
+        [window.alfdb.performances, window.alfdb.sets, window.alfdb.prescriptions],
+        async () => {
+          await window.alfdb.sets.where({ performanceId: perf.id }).delete();
+          await window.alfdb.performances.delete(perf.id);
+          if ((scope === 'template' || scope === 'fork') && perf.prescriptionId) {
+            await window.alfdb.prescriptions.delete(perf.prescriptionId);
+          }
+        });
+
+      this.activeSessionPerformances = this.activeSessionPerformances.filter(p => p.id !== perf.id);
+      this.sessionRemove = null;
+      this.showFlash('Removed (' + scope + ')');
     },
 
     sessionElapsed(s) {
