@@ -34,6 +34,15 @@ function alfApp() {
     showJson: false,
     flash: '',
 
+    // Backup / Restore (Phase A) — stopgap before Supabase.
+    BACKUP_SCHEMA_VERSION: 5,
+    BACKUP_STORES: ['workouts','days','blocks','exercises','prescriptions','sessions','performances','sets','painMarks','trackers','wishlist','meta'],
+    showBackup: false,
+    importText: '',
+    importPreview: null,
+    importError: '',
+    hasUndo: !!localStorage.getItem('alfgym.lastBackup'),
+
     editing: null,
     draftBlock: null,
     draftDay: null,
@@ -968,6 +977,124 @@ function alfApp() {
       await window.alfdbReset();
       this.gotoHash('#/');
       this.showFlash('DB reset');
+    },
+
+    // ----- Phase A: Backup / Restore -----
+
+    async buildBackup() {
+      const stores = {};
+      for (const name of this.BACKUP_STORES) {
+        stores[name] = await window.alfdb[name].toArray();
+      }
+      return {
+        app: 'alf-gym',
+        schemaVersion: this.BACKUP_SCHEMA_VERSION,
+        exportedAt: new Date().toISOString(),
+        stores,
+        settings: { syntax: localStorage.getItem('alfgym.syntax') === '1' }
+      };
+    },
+
+    async downloadBackup() {
+      const data = await this.buildBackup();
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.href = url;
+      a.download = 'alfgym-backup-' + stamp + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.showFlash('Backup downloaded');
+    },
+
+    async copyBackup() {
+      const data = await this.buildBackup();
+      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      this.showFlash('Backup copied');
+    },
+
+    stageImport() {
+      this.importError = '';
+      this.importPreview = null;
+      const text = (this.importText || '').trim();
+      if (!text) { this.importError = 'Paste a backup JSON or pick a file.'; return; }
+      let parsed;
+      try { parsed = JSON.parse(text); }
+      catch (e) { this.importError = 'Not valid JSON: ' + e.message; return; }
+      if (parsed.app !== 'alf-gym') { this.importError = 'Not an alf-gym backup.'; return; }
+      if (parsed.schemaVersion !== this.BACKUP_SCHEMA_VERSION) {
+        this.importError = 'Schema mismatch (file: v' + parsed.schemaVersion + ', app: v' + this.BACKUP_SCHEMA_VERSION + '). Cross-version restore not supported.';
+        return;
+      }
+      if (!parsed.stores || typeof parsed.stores !== 'object') {
+        this.importError = 'Missing "stores" object.';
+        return;
+      }
+      const counts = {};
+      for (const name of this.BACKUP_STORES) {
+        counts[name] = Array.isArray(parsed.stores[name]) ? parsed.stores[name].length : 0;
+      }
+      this.importPreview = { parsed, counts };
+    },
+
+    async stageImportFromFile(ev) {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+      this.importText = await file.text();
+      ev.target.value = '';
+      this.stageImport();
+    },
+
+    async confirmImport() {
+      if (!this.importPreview) return;
+      if (!confirm('Replace ALL local data with this backup? Current state will be stashed for one-cycle undo.')) return;
+      try {
+        const current = await this.buildBackup();
+        localStorage.setItem('alfgym.lastBackup', JSON.stringify(current));
+      } catch (e) {
+        if (!confirm('Could not save undo snapshot (' + (e.message || e.name) + '). Proceed without undo?')) return;
+      }
+      await this.applyBackupReplace(this.importPreview.parsed);
+      this.importText = '';
+      this.importPreview = null;
+      this.hasUndo = !!localStorage.getItem('alfgym.lastBackup');
+      this.showFlash('Restored from backup');
+      this.gotoHash('#/');
+    },
+
+    async applyBackupReplace(parsed) {
+      const db = window.alfdb;
+      const tables = this.BACKUP_STORES.map(n => db[n]);
+      await db.transaction('rw', tables, async () => {
+        for (const name of this.BACKUP_STORES) {
+          await db[name].clear();
+          const rows = parsed.stores[name] || [];
+          if (rows.length) await db[name].bulkPut(rows);
+        }
+      });
+      if (parsed.settings && typeof parsed.settings.syntax === 'boolean') {
+        localStorage.setItem('alfgym.syntax', parsed.settings.syntax ? '1' : '0');
+        this.syntax = parsed.settings.syntax;
+      }
+      await this.loadWorkouts();
+      await this.loadWishlist();
+      await this.loadSessions();
+    },
+
+    async undoLastRestore() {
+      const raw = localStorage.getItem('alfgym.lastBackup');
+      if (!raw) { this.showFlash('No undo available'); return; }
+      if (!confirm('Roll back to pre-restore state? This consumes the one-cycle undo.')) return;
+      const parsed = JSON.parse(raw);
+      await this.applyBackupReplace(parsed);
+      localStorage.removeItem('alfgym.lastBackup');
+      this.hasUndo = false;
+      this.showFlash('Reverted to pre-restore state');
+      this.gotoHash('#/');
     }
   };
 }

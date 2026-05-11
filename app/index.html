@@ -82,7 +82,58 @@
       </div>
       <button class="tiny" @click="gotoHash('#/sessions')" title="sessions">⏱</button>
       <button class="tiny" @click="gotoHash('#/wishlist')" title="wishlist">★ <span x-show="wishlist.length > 0" x-text="wishlist.length"></span></button>
+      <button class="tiny" @click="showBackup = !showBackup" title="backup / restore">backup</button>
       <button class="tiny" @click="showJson = !showJson">json</button>
+    </div>
+  </div>
+
+  <!-- Backup / Restore panel -->
+  <div x-show="showBackup" class="ix-card" style="margin-bottom: 16px;">
+    <div class="row spread" style="margin-bottom: 8px;">
+      <strong style="font-weight: 500;">Backup &amp; restore</strong>
+      <button class="tiny" @click="showBackup = false">close</button>
+    </div>
+    <div style="font-size: 12px; color: var(--text-2); margin-bottom: 12px;">
+      Stopgap for cross-device. Replace-all only — export from device A, import on device B.
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <div style="font-weight: 500; margin-bottom: 6px;">Export</div>
+      <div class="row tight">
+        <button class="tiny" @click="downloadBackup()">download .json</button>
+        <button class="tiny" @click="copyBackup()">copy to clipboard</button>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-weight: 500; margin-bottom: 6px;">Restore</div>
+      <div class="row tight" style="margin-bottom: 8px;">
+        <input type="file" accept="application/json,.json" @change="stageImportFromFile($event)" style="font-size: 12px;" />
+      </div>
+      <textarea x-model="importText" @input="importPreview = null" placeholder="…or paste backup JSON here" style="width: 100%; min-height: 80px; font-family: var(--mono); font-size: 11px; padding: 8px; box-sizing: border-box;"></textarea>
+      <div class="row tight" style="margin-top: 8px;">
+        <button class="tiny" @click="stageImport()">preview</button>
+        <template x-if="importPreview">
+          <button class="tiny" @click="confirmImport()" style="color: var(--danger);">replace all</button>
+        </template>
+        <template x-if="hasUndo">
+          <button class="tiny" @click="undoLastRestore()">undo last restore</button>
+        </template>
+      </div>
+      <template x-if="importError">
+        <div style="color: var(--danger); font-size: 12px; margin-top: 8px;" x-text="importError"></div>
+      </template>
+      <template x-if="importPreview">
+        <div style="margin-top: 12px; font-size: 12px;">
+          <div>Exported: <span x-text="importPreview.parsed.exportedAt || '—'"></span></div>
+          <div>Schema: v<span x-text="importPreview.parsed.schemaVersion"></span></div>
+          <div style="margin-top: 6px; font-family: var(--mono); font-size: 11px;">
+            <template x-for="name in BACKUP_STORES" :key="name">
+              <div><span x-text="name"></span>: <span x-text="importPreview.counts[name]"></span></div>
+            </template>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 
