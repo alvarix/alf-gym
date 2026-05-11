@@ -213,6 +213,110 @@ test('remove exercise — fork: original prescription kept, fork copy deleted', 
   expect(result.originalArchived).toBe(true);
 });
 
+test('add block — session only: sentinel blockId, no Block row, then exercise added', async ({ page }) => {
+  await startFirstSession(page);
+
+  const result = await page.evaluate(async () => {
+    const app = document.querySelector('[x-data]')._x_dataStack[0];
+    const blocksBefore = await window.alfdb.blocks.count();
+
+    app.openSessionAddBlock();
+    app.sessionAddBlock.name = 'Cooldown extras';
+    app.sessionAddBlock.type = 'linear';
+    await app.commitSessionAddBlock('session');
+
+    const blocksAfter = await window.alfdb.blocks.count();
+    const lockedScope = app.sessionAdd ? app.sessionAdd.lockedScope : null;
+    const blockIdIsString = typeof (app.sessionAdd && app.sessionAdd.blockId) === 'string';
+
+    app.sessionAdd.exerciseQuery = 'Adhoc finisher';
+    app.sessionAdd.sets = 1;
+    await app.commitSessionAdd('session');
+
+    const newPerf = app.activeSessionPerformances.find(p => p.exerciseName === 'Adhoc finisher');
+    const groups = app.sessionGroupedBlocks();
+    const adhocGroup = groups.find(g => g.blockName === 'Cooldown extras');
+    return { blocksBefore, blocksAfter, lockedScope, blockIdIsString, newPerf, adhocGroup };
+  });
+
+  expect(result.blocksAfter).toBe(result.blocksBefore); // no template Block row written
+  expect(result.lockedScope).toBe('session');
+  expect(result.blockIdIsString).toBe(true);
+  expect(result.newPerf).toBeTruthy();
+  expect(result.newPerf.prescriptionId).toBeNull();
+  expect(typeof result.newPerf.blockId).toBe('string');
+  expect(result.adhocGroup).toBeTruthy();
+  expect(result.adhocGroup.blockName).toBe('Cooldown extras');
+});
+
+test('add block — template: real Block row added to current day', async ({ page }) => {
+  const { dayId } = await startFirstSession(page);
+
+  const result = await page.evaluate(async (dayId) => {
+    const app = document.querySelector('[x-data]')._x_dataStack[0];
+    const blocksBefore = await window.alfdb.blocks.where({ dayId }).count();
+
+    app.openSessionAddBlock();
+    app.sessionAddBlock.name = 'Extra accessory';
+    app.sessionAddBlock.type = 'circuit';
+    app.sessionAddBlock.rounds = 4;
+    app.sessionAddBlock.restBetweenRoundsSec = 60;
+    await app.commitSessionAddBlock('template');
+
+    const blocksAfter = await window.alfdb.blocks.where({ dayId }).toArray();
+    const newBlock = blocksAfter.find(b => b.name === 'Extra accessory');
+    const sessionAddBlockId = app.sessionAdd ? app.sessionAdd.blockId : null;
+    return {
+      blocksBeforeCount: blocksBefore,
+      blocksAfterCount: blocksAfter.length,
+      newBlock,
+      sessionAddBlockId,
+      lockedScope: app.sessionAdd ? app.sessionAdd.lockedScope : null
+    };
+  }, dayId);
+
+  expect(result.blocksAfterCount).toBe(result.blocksBeforeCount + 1);
+  expect(result.newBlock).toBeTruthy();
+  expect(result.newBlock.type).toBe('circuit');
+  expect(result.newBlock.rounds).toBe(4);
+  expect(result.newBlock.restBetweenRoundsSec).toBe(60);
+  expect(result.sessionAddBlockId).toBe(result.newBlock.id);
+  expect(result.lockedScope).toBe('template');
+});
+
+test('add block — fork: workout forked, block in fork, session re-pointed', async ({ page }) => {
+  const { workoutId: originalWorkoutId } = await startFirstSession(page);
+
+  const result = await page.evaluate(async (originalWorkoutId) => {
+    const app = document.querySelector('[x-data]')._x_dataStack[0];
+    const workoutsBefore = await window.alfdb.workouts.count();
+
+    app.openSessionAddBlock();
+    app.sessionAddBlock.name = 'Forked accessory';
+    app.sessionAddBlock.type = 'linear';
+    await app.commitSessionAddBlock('fork');
+
+    const workoutsAfter = await window.alfdb.workouts.count();
+    const session = await window.alfdb.sessions.get(app.activeSessionId);
+    const newBlock = await window.alfdb.blocks.get(app.sessionAdd.blockId);
+    const newBlockDay = await window.alfdb.days.get(newBlock.dayId);
+    const originalWorkout = await window.alfdb.workouts.get(originalWorkoutId);
+    return {
+      workoutsBefore, workoutsAfter,
+      sessionWorkoutId: session.workoutId,
+      newBlockWorkoutId: newBlockDay.workoutId,
+      originalIsCurrent: originalWorkout.isCurrent,
+      lockedScope: app.sessionAdd.lockedScope
+    };
+  }, originalWorkoutId);
+
+  expect(result.workoutsAfter).toBe(result.workoutsBefore + 1);
+  expect(result.sessionWorkoutId).not.toBe(originalWorkoutId);
+  expect(result.newBlockWorkoutId).toBe(result.sessionWorkoutId);
+  expect(result.originalIsCurrent).toBe(0);
+  expect(result.lockedScope).toBe('template');
+});
+
 test('add exercise inserts at end of its block group in performance ordering', async ({ page }) => {
   const { firstBlockId } = await startFirstSession(page);
 

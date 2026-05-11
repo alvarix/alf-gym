@@ -44,8 +44,9 @@ function alfApp() {
     hasUndo: !!localStorage.getItem('alfgym.lastBackup'),
 
     // Partial sessions (Phase B): inline add/remove exercise drafts.
-    sessionAdd: null,     // { blockId, exerciseQuery, sets, reps, load, sideScheme, holdSec, notable, notes }
-    sessionRemove: null,  // { perfId }
+    sessionAdd: null,       // { blockId, exerciseQuery, sets, reps, load, sideScheme, holdSec, notable, notes, lockedScope? }
+    sessionRemove: null,    // { perfId }
+    sessionAddBlock: null,  // { name, type, optional, rounds, restBetweenRoundsSec }
 
     editing: null,
     draftBlock: null,
@@ -390,6 +391,79 @@ function alfApp() {
     openSessionRemove(perf) { this.sessionRemove = { perfId: perf.id }; },
     cancelSessionRemove() { this.sessionRemove = null; },
 
+    openSessionAddBlock() {
+      this.sessionAddBlock = {
+        name: '',
+        type: 'linear',
+        optional: false,
+        rounds: 3,
+        restBetweenRoundsSec: 90
+      };
+    },
+
+    cancelSessionAddBlock() { this.sessionAddBlock = null; },
+
+    /**
+     * Commit a new block to the active session with the given scope, then
+     * immediately open an add-exercise draft scoped to it. Session-only
+     * blocks use a string sentinel id and write no Block row; template
+     * and fork blocks write a real Block row (to either the current day
+     * or the freshly-forked day). The follow-up sessionAdd carries a
+     * lockedScope so the exercise inherits the block's scope.
+     * @param {'session'|'template'|'fork'} scope
+     */
+    async commitSessionAddBlock(scope) {
+      if (!this.sessionAddBlock) return;
+      const draft = this.sessionAddBlock;
+      const name = (draft.name || '').trim() || 'New block';
+      const type = draft.type || 'linear';
+      const optional = !!draft.optional;
+      const rounds = type === 'circuit' ? (parseInt(draft.rounds, 10) || 3) : null;
+      const rest = type === 'circuit' ? (parseInt(draft.restBetweenRoundsSec, 10) || 90) : null;
+
+      if (scope === 'fork') {
+        const r = await this.forkSessionWorkout();
+        if (!r) return;
+      }
+
+      let blockId;
+      let lockedExerciseScope;
+      if (scope === 'template' || scope === 'fork') {
+        const dayId = this.activeSession.dayId;
+        const existing = await window.alfdb.blocks.where({ dayId }).toArray();
+        const order = existing.reduce((m, b) => Math.max(m, b.order || 0), 0) + 1;
+        const fields = { dayId, name, type, optional, order };
+        if (type === 'circuit') { fields.rounds = rounds; fields.restBetweenRoundsSec = rest; }
+        blockId = await window.alfdb.blocks.add(fields);
+        // Already in the fork (if we forked); subsequent exercise add is 'template'.
+        lockedExerciseScope = 'template';
+      } else {
+        // session only: sentinel string id, no Block row written.
+        blockId = 'sess-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        lockedExerciseScope = 'session';
+      }
+
+      this.sessionAddBlock = null;
+      this.sessionAdd = {
+        blockId,
+        blockName: name,
+        blockType: type,
+        blockOptional: optional,
+        blockRounds: rounds,
+        blockRestBetweenRoundsSec: rest,
+        exerciseQuery: '',
+        sets: 3,
+        reps: 8,
+        load: '',
+        sideScheme: 'bilateral',
+        holdSec: null,
+        notable: false,
+        notes: '',
+        lockedScope: lockedExerciseScope
+      };
+      this.showFlash('Block ready — add an exercise');
+    },
+
     /**
      * Fork the workout backing the active session. Deep-copies workout/days/
      * blocks/prescriptions; re-points session.workoutId, session.dayId, and
@@ -481,12 +555,14 @@ function alfApp() {
     },
 
     /**
-     * Commit the sessionAdd draft with the given scope.
+     * Commit the sessionAdd draft with the given scope. If draft.lockedScope
+     * is set (from a fresh session-only block), that scope wins regardless.
      * @param {'session'|'template'|'fork'} scope
      */
     async commitSessionAdd(scope) {
       if (!this.sessionAdd) return;
       const draft = this.sessionAdd;
+      if (draft.lockedScope) scope = draft.lockedScope;
       const ex = await this.resolveExerciseByName(draft.exerciseQuery);
       if (!ex) { alert('Type or pick an exercise name.'); return; }
 
@@ -497,8 +573,19 @@ function alfApp() {
         targetBlockId = r.blockIdMap[draft.blockId] || draft.blockId;
       }
 
-      const block = await window.alfdb.blocks.get(targetBlockId);
-      if (!block) { alert('Block not found.'); return; }
+      // Session-only blocks use a string sentinel id and have no Block row;
+      // fall back to the block fields stashed on the draft.
+      let block = typeof targetBlockId === 'number' ? await window.alfdb.blocks.get(targetBlockId) : null;
+      if (!block) {
+        block = {
+          id: targetBlockId,
+          name: draft.blockName || 'New block',
+          type: draft.blockType || 'linear',
+          optional: !!draft.blockOptional,
+          rounds: draft.blockRounds || null,
+          restBetweenRoundsSec: draft.blockRestBetweenRoundsSec || null
+        };
+      }
 
       const numSets = parseInt(draft.sets, 10) || 1;
       const holdSec = draft.holdSec ? parseInt(draft.holdSec, 10) : null;

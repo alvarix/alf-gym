@@ -484,6 +484,103 @@
           </div>
         </template>
 
+        <!-- Add-block affordance (Phase B) -->
+        <div x-show="activeSession.status === 'in_progress' && !sessionAddBlock && (!sessionAdd || sessionAdd.lockedScope == null)" style="margin: 8px 0;">
+          <button class="tiny" @click="openSessionAddBlock()">+ block</button>
+        </div>
+
+        <template x-if="sessionAddBlock">
+          <div class="ix-card" style="background: var(--surface-2);">
+            <div class="row spread" style="margin-bottom: 8px;">
+              <strong style="font-weight: 500;">Add block</strong>
+              <button class="tiny" @click="cancelSessionAddBlock()">close</button>
+            </div>
+            <div class="form-row">
+              <label>name</label>
+              <input x-model="sessionAddBlock.name" placeholder="e.g. Cooldown extras" />
+            </div>
+            <div class="row tight" style="gap: 6px;">
+              <div class="form-row" style="flex: 1;">
+                <label>type</label>
+                <select x-model="sessionAddBlock.type">
+                  <option value="linear">linear</option>
+                  <option value="circuit">circuit</option>
+                </select>
+              </div>
+              <div class="form-row" style="flex: 1;">
+                <label>optional</label>
+                <input type="checkbox" x-model="sessionAddBlock.optional" style="width: auto; margin: 6px 0;" />
+              </div>
+            </div>
+            <template x-if="sessionAddBlock.type === 'circuit'">
+              <div class="row tight" style="gap: 6px;">
+                <div class="form-row" style="flex: 1;">
+                  <label>rounds</label>
+                  <input type="number" min="1" x-model.number="sessionAddBlock.rounds" />
+                </div>
+                <div class="form-row" style="flex: 1;">
+                  <label>rest (s)</label>
+                  <input type="number" min="0" x-model.number="sessionAddBlock.restBetweenRoundsSec" />
+                </div>
+              </div>
+            </template>
+            <div style="font-size: 12px; color: var(--text-2); margin: 10px 0 6px;">Save as:</div>
+            <div class="row tight" style="gap: 6px;">
+              <button class="tiny" @click="commitSessionAddBlock('session')">this session only</button>
+              <button class="tiny" @click="commitSessionAddBlock('template')">to template</button>
+              <button class="tiny" @click="commitSessionAddBlock('fork')" style="color: var(--danger);">fork</button>
+            </div>
+          </div>
+        </template>
+
+        <!-- Add-first-exercise into a freshly-created block (Phase B) -->
+        <template x-if="sessionAdd && sessionAdd.lockedScope">
+          <div class="ix-card" style="background: var(--surface-2);">
+            <div class="row spread" style="margin-bottom: 8px;">
+              <strong style="font-weight: 500;">Add exercise to <span x-text="sessionAdd.blockName"></span></strong>
+              <button class="tiny" @click="cancelSessionAdd()">close</button>
+            </div>
+            <div class="form-row">
+              <label>exercise</label>
+              <input x-model="sessionAdd.exerciseQuery" placeholder="type to pick or create" list="alfgym-ex-options" />
+            </div>
+            <div class="row tight" style="gap: 6px;">
+              <div class="form-row" style="flex: 1;">
+                <label>sets</label>
+                <input type="number" min="1" x-model.number="sessionAdd.sets" />
+              </div>
+              <div class="form-row" style="flex: 1;">
+                <label>reps</label>
+                <input x-model="sessionAdd.reps" placeholder="8 or 5,8,12" />
+              </div>
+              <div class="form-row" style="flex: 1;">
+                <label>load</label>
+                <input x-model="sessionAdd.load" placeholder="50 / band / ^15" />
+              </div>
+            </div>
+            <div class="row tight" style="gap: 6px;">
+              <div class="form-row" style="flex: 1;">
+                <label>side</label>
+                <select x-model="sessionAdd.sideScheme">
+                  <option value="bilateral">bilateral</option>
+                  <option value="unilateral-L-first">unilateral L-first</option>
+                  <option value="alternating">alternating</option>
+                </select>
+              </div>
+              <div class="form-row" style="flex: 1;">
+                <label>hold (s)</label>
+                <input type="number" min="0" x-model="sessionAdd.holdSec" placeholder="optional" />
+              </div>
+            </div>
+            <div style="font-size: 12px; color: var(--text-2); margin: 10px 0 6px;">
+              Locked scope: <strong x-text="sessionAdd.lockedScope"></strong> (matches the block's scope)
+            </div>
+            <div class="row tight" style="gap: 6px;">
+              <button class="tiny" @click="commitSessionAdd(sessionAdd.lockedScope)">add</button>
+            </div>
+          </div>
+        </template>
+
         <!-- Remove-exercise scope picker (Phase B) -->
         <template x-if="sessionRemove">
           <div class="ix-card" style="background: var(--surface-2); border: 1px solid var(--danger);">
