@@ -48,6 +48,11 @@ function alfApp() {
     sessionRemove: null,    // { perfId }
     sessionAddBlock: null,  // { name, type, optional, rounds, restBetweenRoundsSec }
 
+    // Phase C: inline edit drafts. Kept as always-object (never null) to avoid
+    // Alpine x-model teardown errors; check perfId/blockId for open state.
+    sessionEditPerf: { perfId: null, fields: {} },
+    sessionEditBlock: { blockId: null, fields: {} },
+
     editing: null,
     draftBlock: null,
     draftDay: null,
@@ -684,6 +689,148 @@ function alfApp() {
       this.activeSessionPerformances = this.activeSessionPerformances.filter(p => p.id !== perf.id);
       this.sessionRemove = null;
       this.showFlash('Removed (' + scope + ')');
+    },
+
+    // ── Phase C: edit prescriptions and blocks mid-session ──────────────────
+
+    /**
+     * Open an inline edit draft for a single performance.
+     * @param {object} perf - Performance row from activeSessionPerformances.
+     */
+    openEditPerf(perf) {
+      this.sessionEditPerf = {
+        perfId: perf.id,
+        fields: {
+          exerciseQuery: perf.exerciseName || '',
+          sets: perf.prescribedSets || 1,
+          reps: perf.prescribedReps == null ? '' : String(perf.prescribedReps),
+          load: perf.prescribedLoad || '',
+          sideScheme: perf.prescribedSideScheme || 'bilateral',
+          holdSec: perf.prescribedHoldSec || null,
+          notable: !!perf.prescribedNotable,
+          notes: perf.notes || ''
+        }
+      };
+    },
+
+    cancelEditPerf() { this.sessionEditPerf = { perfId: null, fields: {} }; },
+
+    /**
+     * Commit the sessionEditPerf draft with the given scope.
+     * Set-row counts are not adjusted when prescribedSets changes;
+     * the user manages actuals via existing + set / × set affordances.
+     * @param {'session'|'template'|'fork'} scope
+     */
+    async commitEditPerf(scope) {
+      if (!this.sessionEditPerf.perfId) return;
+      const draft = this.sessionEditPerf;
+      const perf = this.activeSessionPerformances.find(p => p.id === draft.perfId);
+      if (!perf) { this.sessionEditPerf = null; return; }
+
+      // session-only perfs (null prescriptionId) are locked to session scope.
+      if (perf.prescriptionId == null) scope = 'session';
+
+      const ex = await this.resolveExerciseByName(draft.fields.exerciseQuery);
+      if (!ex) { alert('Type or pick an exercise name.'); return; }
+
+      if (scope === 'fork') {
+        const r = await this.forkSessionWorkout();
+        if (!r) return;
+        // perf is mutated in-place by forkSessionWorkout to point at fork ids.
+      }
+
+      const holdSec = draft.fields.holdSec ? parseInt(draft.fields.holdSec, 10) : null;
+      const perfPatch = {
+        exerciseId: ex.id,
+        exerciseName: ex.name,
+        prescribedSets: parseInt(draft.fields.sets, 10) || 1,
+        prescribedReps: draft.fields.reps == null ? '' : String(draft.fields.reps),
+        prescribedLoad: draft.fields.load || '',
+        prescribedSideScheme: draft.fields.sideScheme || 'bilateral',
+        prescribedHoldSec: holdSec,
+        prescribedNotable: !!draft.fields.notable,
+        notes: draft.fields.notes || ''
+      };
+
+      if (scope !== 'session' && perf.prescriptionId != null) {
+        await window.alfdb.prescriptions.update(perf.prescriptionId, {
+          exerciseId: ex.id,
+          sets: perfPatch.prescribedSets,
+          reps: perfPatch.prescribedReps === '' ? null : perfPatch.prescribedReps,
+          load: perfPatch.prescribedLoad,
+          sideScheme: perfPatch.prescribedSideScheme,
+          holdSec,
+          notable: !!draft.fields.notable,
+          notes: draft.fields.notes || ''
+        });
+      }
+
+      await window.alfdb.performances.update(perf.id, perfPatch);
+      Object.assign(perf, perfPatch);
+
+      this.sessionEditPerf = { perfId: null, fields: {} };
+      this.showFlash('Exercise updated (' + scope + ')');
+    },
+
+    /**
+     * Open an inline edit draft for a block group.
+     * @param {object} g - Group object from sessionGroupedBlocks().
+     */
+    openEditBlock(g) {
+      this.sessionEditBlock = {
+        blockId: g.blockId,
+        fields: {
+          name: g.blockName || '',
+          type: g.blockType || 'linear',
+          optional: !!g.blockOptional,
+          rounds: g.blockRounds || 3,
+          restBetweenRoundsSec: g.performances[0] ? (g.performances[0].blockRestBetweenRoundsSec || 90) : 90
+        }
+      };
+    },
+
+    cancelEditBlock() { this.sessionEditBlock = { blockId: null, fields: {} }; },
+
+    /**
+     * Commit the sessionEditBlock draft with the given scope.
+     * String-sentinel blockIds (session-only blocks) are locked to session scope.
+     * @param {'session'|'template'|'fork'} scope
+     */
+    async commitEditBlock(scope) {
+      if (this.sessionEditBlock.blockId === null) return;
+      const draft = this.sessionEditBlock;
+      let blockId = draft.blockId;
+
+      // Sentinel guard: session-only blocks have no template row.
+      if (typeof blockId === 'string') scope = 'session';
+
+      if (scope === 'fork') {
+        const r = await this.forkSessionWorkout();
+        if (!r) return;
+        blockId = r.blockIdMap[blockId] || blockId;
+      }
+
+      const name = (draft.fields.name || '').trim() || 'Block';
+      const type = draft.fields.type || 'linear';
+      const optional = !!draft.fields.optional;
+      const rounds = type === 'circuit' ? (parseInt(draft.fields.rounds, 10) || 3) : null;
+      const rest = type === 'circuit' ? (parseInt(draft.fields.restBetweenRoundsSec, 10) || 90) : null;
+
+      if (scope !== 'session') {
+        await window.alfdb.blocks.update(blockId, { name, type, optional, rounds, restBetweenRoundsSec: rest });
+      }
+
+      // Always patch denormalized fields on every performance in this session for this block.
+      const perfPatch = { blockName: name, blockType: type, blockOptional: optional, blockRounds: rounds, blockRestBetweenRoundsSec: rest };
+      for (const perf of this.activeSessionPerformances) {
+        if (perf.blockId === blockId || perf.blockId === draft.blockId) {
+          await window.alfdb.performances.update(perf.id, perfPatch);
+          Object.assign(perf, perfPatch);
+        }
+      }
+
+      this.sessionEditBlock = { blockId: null, fields: {} };
+      this.showFlash('Block updated (' + scope + ')');
     },
 
     sessionElapsed(s) {

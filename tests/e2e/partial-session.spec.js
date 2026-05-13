@@ -31,8 +31,8 @@ async function startFirstSession(page) {
     const days = await window.alfdb.days.toArray();
     const day = days.sort((a, b) => a.order - b.order)[0];
     await app.startSessionForDay(day.id);
-    // Wait for session to be hydrated.
-    while (!app.activeSession) await new Promise(r => setTimeout(r, 30));
+    // Wait for session and performances to be hydrated.
+    while (!app.activeSession || !app.activeSessionPerformances.length) await new Promise(r => setTimeout(r, 30));
     return {
       sessionId: app.activeSessionId,
       workoutId: app.activeSession.workoutId,
