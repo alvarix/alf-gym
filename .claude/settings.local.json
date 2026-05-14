@@ -3,7 +3,8 @@
     "allow": [
       "Bash(grep -E '\\\\.\\(json|js|yml|yaml\\)$')",
       "Bash(gh repo *)",
-      "Bash(node ._-/import-dayc-session.js)"
+      "Bash(node ._-/import-dayc-session.js)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://api.github.com/repos/alvarix/alf-gym)"
     ]
   }
 }
