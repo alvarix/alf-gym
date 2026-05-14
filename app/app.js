@@ -29,6 +29,7 @@ function alfApp() {
     activeSessionId: null,
     activeSession: null,
     activeSessionPerformances: [],   // [{ ...performance, _block, _sets[] }]
+    sessionLoadError: false,
     endingSession: false,            // shows mood/env panel
     endMood: null,
     endEnv: 'gym',
@@ -186,8 +187,13 @@ function alfApp() {
       try {
       const day = await window.alfdb.days.get(dayId);
       if (!day) return;
-      const blocks = await window.alfdb.blocks.where({ dayId }).toArray();
+      // Use full-scan + filter for tables that may contain imported records.
+      // Dexie secondary indexes are unreliable for rows added via bulkPut during import,
+      // returning empty results even when matching rows exist.
+      const allBlocks = await window.alfdb.blocks.toArray();
+      const blocks = allBlocks.filter(b => b.dayId === dayId);
       blocks.sort((a, b) => a.order - b.order);
+      console.log(`[startSessionForDay] dayId=${dayId} blocks.matched=${blocks.length}/${allBlocks.length}`);
 
       // Find the most recent completed session for this same day to prefill actuals.
       const allDaySessions = await window.alfdb.sessions.toArray();
@@ -196,12 +202,13 @@ function alfApp() {
         .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))[0] || null;
 
       // Build exerciseId -> sorted sets[] from that session.
+      const allPerfsForPrev = await window.alfdb.performances.toArray();
+      const allSetsForPrev = await window.alfdb.sets.toArray();
       const prevSetsByExerciseId = {};
       if (prevSession) {
-        const prevPerfs = await window.alfdb.performances
-          .where('sessionId').equals(prevSession.id).toArray();
+        const prevPerfs = allPerfsForPrev.filter(p => p.sessionId === prevSession.id);
         for (const pp of prevPerfs) {
-          const ppSets = await window.alfdb.sets.where({ performanceId: pp.id }).toArray();
+          const ppSets = allSetsForPrev.filter(s => s.performanceId === pp.id);
           ppSets.sort((a, b) => a.setIndex - b.setIndex);
           prevSetsByExerciseId[pp.exerciseId] = ppSets;
         }
@@ -209,10 +216,12 @@ function alfApp() {
 
       // Load all prescriptions and exercises before the transaction (IDB transactions
       // can only access the stores they were opened with).
+      const allPrescriptions = await window.alfdb.prescriptions.toArray();
       const blockPrescriptions = [];
       for (const b of blocks) {
-        const prescriptions = await window.alfdb.prescriptions.where({ blockId: b.id }).toArray();
+        const prescriptions = allPrescriptions.filter(p => p.blockId === b.id);
         prescriptions.sort((a, b) => a.order - b.order);
+        console.log(`[startSessionForDay] block=${b.id} (${b.name}) prescriptions=${prescriptions.length}`);
         for (const p of prescriptions) {
           const ex = await window.alfdb.exercises.get(p.exerciseId);
           blockPrescriptions.push({ block: b, prescription: p, exerciseName: ex ? ex.name : '?' });
@@ -280,32 +289,60 @@ function alfApp() {
     },
 
     async openSession(id) {
-      const s = await window.alfdb.sessions.get(id);
-      if (!s) return this.gotoHash('#/');
-      this.activeSessionId = id;
-      this.activeSession = s;
-      const perfs = await window.alfdb.performances.where({ sessionId: id }).toArray();
-      perfs.sort((a, b) => a.order - b.order);
-      // Hydrate sets per performance.
-      for (const p of perfs) {
-        const sets = await window.alfdb.sets.where({ performanceId: p.id }).toArray();
-        sets.sort((a, b) => a.setIndex - b.setIndex);
-        p._sets = sets;
-        const pains = await window.alfdb.painMarks.where({ performanceId: p.id }).toArray();
-        p._pains = pains;
+      const callId = Math.random().toString(36).slice(2, 7);
+      console.log(`[openSession ${callId}] start id=${id} type=${typeof id}`);
+      // Guard: hashchange has been observed firing this twice in rapid succession.
+      // Drop a duplicate call for the same id while one is already in flight.
+      if (this._openSessionInFlight === id) {
+        console.log(`[openSession ${callId}] skipped — already loading id=${id}`);
+        return;
       }
-      this.activeSessionPerformances = perfs;
-      this.view = 'session';
-      this.endingSession = false;
+      this._openSessionInFlight = id;
+      this.sessionLoadError = false;
+      try {
+        const s = await window.alfdb.sessions.get(id);
+        console.log(`[openSession ${callId}] session=`, s ? { id: s.id, dayId: s.dayId, status: s.status } : null);
+        if (!s) return this.gotoHash('#/');
+        await this.loadExercises();
+        this.activeSessionId = id;
+        this.activeSession = s;
+        const allPerfs = await window.alfdb.performances.toArray();
+        const sessionIds = [...new Set(allPerfs.map(p => p.sessionId))];
+        const perfs = allPerfs.filter(p => p.sessionId === id);
+        console.log(`[openSession ${callId}] allPerfs.length=${allPerfs.length} sessionIds=${JSON.stringify(sessionIds)} matched=${perfs.length}`);
+        perfs.sort((a, b) => a.order - b.order);
+        const allSets = await window.alfdb.sets.toArray();
+        const allPains = await window.alfdb.painMarks.toArray();
+        for (const p of perfs) {
+          const sets = allSets.filter(s => s.performanceId === p.id);
+          sets.sort((a, b) => a.setIndex - b.setIndex);
+          p._sets = sets;
+          p._pains = allPains.filter(pm => pm.performanceId === p.id);
+        }
+        this.activeSessionPerformances = perfs;
+        this.view = 'session';
+        this.endingSession = false;
+        console.log(`[openSession ${callId}] done — activeSessionPerformances.length=${this.activeSessionPerformances.length}`);
+      } catch (e) {
+        console.error(`[openSession ${callId}] error:`, e.name, e.message, e);
+        this.sessionLoadError = true;
+        this.view = 'session';
+      } finally {
+        if (this._openSessionInFlight === id) this._openSessionInFlight = null;
+      }
     },
 
     sessionGroupedBlocks() {
-      // Group performances by blockId, preserving order.
+      // Group performances by blockId, preserving order. Each group gets a
+      // unique `key` derived from position + blockId so Alpine x-for doesn't
+      // collide when the same blockId appears more than once (which can happen
+      // when performances within a block aren't contiguous in `.order`, e.g.
+      // after mid-session edits).
       const groups = [];
       let last = null;
       for (const p of this.activeSessionPerformances) {
         if (!last || last.blockId !== p.blockId) {
-          last = { blockId: p.blockId, blockName: p.blockName, blockType: p.blockType, blockOptional: p.blockOptional, blockRounds: p.blockRounds, performances: [] };
+          last = { key: groups.length + '_' + p.blockId, blockId: p.blockId, blockName: p.blockName, blockType: p.blockType, blockOptional: p.blockOptional, blockRounds: p.blockRounds, performances: [] };
           groups.push(last);
         }
         last.performances.push(p);
@@ -313,11 +350,22 @@ function alfApp() {
       return groups;
     },
 
-    async updateSetField(s, field, value) {
+    async updateSetField(perf, s, field, value) {
       const patch = { [field]: value };
       if (s.prefilled) { patch.prefilled = false; s.prefilled = false; }
+      if ((field === 'reps' || field === 'load') && value !== '') { patch.done = true; s.done = true; }
       await window.alfdb.sets.update(s.id, patch);
       s[field] = value;
+      if ((field === 'reps' || field === 'load') && value !== '') {
+        const idx = perf._sets.indexOf(s);
+        for (let i = idx + 1; i < perf._sets.length; i++) {
+          const next = perf._sets[i];
+          if (next.prefilled) {
+            await window.alfdb.sets.update(next.id, { [field]: value });
+            next[field] = value;
+          }
+        }
+      }
     },
 
     async toggleSetDone(s) {
@@ -878,7 +926,7 @@ function alfApp() {
       return out.trim();
     },
 
-    async applySetToken(s, token) {
+    async applySetToken(perf, s, token) {
       const t = (token || '').trim();
       let reps = '', load = '', side = '', holdSec = null, notable = false;
       if (t.includes(';')) {
@@ -900,8 +948,19 @@ function alfApp() {
       }
       const patch = { reps, load, side, holdSec, notable };
       if (s.prefilled) { patch.prefilled = false; s.prefilled = false; }
+      if (reps !== '' || load !== '') { patch.done = true; s.done = true; }
       await window.alfdb.sets.update(s.id, patch);
       Object.assign(s, patch);
+      if (load !== '' && perf) {
+        const idx = perf._sets.indexOf(s);
+        for (let i = idx + 1; i < perf._sets.length; i++) {
+          const next = perf._sets[i];
+          if (next.prefilled) {
+            await window.alfdb.sets.update(next.id, { load });
+            next.load = load;
+          }
+        }
+      }
     },
 
     /** @param {object[]} sets */
@@ -920,7 +979,7 @@ function alfApp() {
       // Update or add sets to match token count
       for (let i = 0; i < tokens.length; i++) {
         if (i >= perf._sets.length) await this.addSet(perf);
-        await this.applySetToken(perf._sets[i], tokens[i]);
+        await this.applySetToken(perf, perf._sets[i], tokens[i]);
       }
       // Remove trailing sets if fewer tokens than existing sets
       while (perf._sets.length > tokens.length && perf._sets.length > 1) {
@@ -1082,6 +1141,7 @@ function alfApp() {
     },
 
     exerciseName(id) { const ex = this.exercises.find(e => e.id === id); return ex ? ex.name : '?'; },
+    exerciseCues(id) { const ex = this.exercises.find(e => e.id === id); return ex ? (ex.cues || '') : ''; },
     workoutName(id) { const w = this.workouts.find(x => x.id === id); return w ? w.name : '?'; },
 
     // ----- Visible workouts -----
@@ -1281,7 +1341,7 @@ function alfApp() {
         sets: 3, reps: 8, holdSec: null,
         sideScheme: 'bilateral',
         load: '', loadKind: 'lb', loadValue: '',
-        notable: false, notes: '', order
+        notable: false, notes: '', cues: '', order
       };
       this.editing = {
         id: null,
@@ -1299,7 +1359,8 @@ function alfApp() {
     },
     editExercise(p) {
       const parsed = this.parseLoadString(p.load || '');
-      const fields = { ...p, notable: !!p.notable, notes: p.notes || '', loadKind: parsed.kind, loadValue: parsed.value };
+      const ex = this.exercises.find(e => e.id === p.exerciseId);
+      const fields = { ...p, notable: !!p.notable, notes: p.notes || '', loadKind: parsed.kind, loadValue: parsed.value, cues: ex ? (ex.cues || '') : '' };
       this.editing = {
         id: p.id,
         exerciseQuery: this.exerciseName(p.exerciseId),
@@ -1412,9 +1473,13 @@ function alfApp() {
       this.editing.fields.load = this.composeLoadString(this.editing.fields.loadKind, this.editing.fields.loadValue);
 
       this.editing.fields.exerciseId = ex.id;
+      if (this.editing.fields.cues !== undefined) {
+        await window.alfdb.exercises.update(ex.id, { cues: this.editing.fields.cues || '' });
+        await this.loadExercises();
+      }
       const f = { ...this.editing.fields };
       // strip ui-only fields before save
-      delete f.loadKind; delete f.loadValue;
+      delete f.loadKind; delete f.loadValue; delete f.cues;
       if (typeof f.sets === 'string') f.sets = parseInt(f.sets, 10) || 1;
       if (typeof f.holdSec === 'string') f.holdSec = f.holdSec ? parseInt(f.holdSec, 10) : null;
 
@@ -1627,6 +1692,7 @@ function alfApp() {
     },
 
     async confirmImport() {
+      console.log('[import] confirmImport build=2026-05-14-b'); // bump on each fix to verify cache freshness
       if (!this.importPreview) return;
       if (!confirm('Replace ALL local data with this backup? Current state will be stashed for one-cycle undo.')) return;
       try {
@@ -1635,12 +1701,21 @@ function alfApp() {
       } catch (e) {
         if (!confirm('Could not save undo snapshot (' + (e.message || e.name) + '). Proceed without undo?')) return;
       }
-      await this.applyBackupReplace(this.importPreview.parsed);
-      this.importText = '';
-      this.importPreview = null;
-      this.hasUndo = !!localStorage.getItem('alfgym.lastBackup');
-      this.showFlash('Restored from backup');
-      this.gotoHash('#/');
+      try {
+        // Re-parse from raw text to get a plain object, not an Alpine reactive proxy.
+        // IDB's structured clone cannot serialize Proxy objects (DataCloneError).
+        const rawParsed = JSON.parse(this.importText);
+        await this.applyBackupReplace(rawParsed);
+        this.importText = '';
+        this.importPreview = null;
+        this.hasUndo = !!localStorage.getItem('alfgym.lastBackup');
+        const sc = this.sessions.length;
+        this.showFlash('Restored: ' + sc + ' session' + (sc !== 1 ? 's' : ''));
+        this.gotoHash('#/sessions');
+      } catch (e) {
+        console.error('confirmImport failed:', e.name, e.message, e);
+        this.importError = 'Import failed: ' + (e.message || e.name || String(e));
+      }
     },
 
     async applyBackupReplace(parsed) {
