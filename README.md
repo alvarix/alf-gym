@@ -2,6 +2,12 @@
 
 A mobile-first PWA for tracking gym sessions. Offline-first, fast capture, history that surfaces last cycle's output as you log this cycle's.
 
+## Import
+To import your session data locally:
+1. Navigate to `http://localhost:8000`
+2. Open the backup panel (look for a backup/restore section — probably in settings or a gear icon)
+3. Use **"pick a file"** and select `/Users/alvarsirlin/Sites/apps/alf-gym/data/alfgym-backup-2026-05-14T18-30-13.json
+
 ## Status
 
 r4.6 — editable session date (datetime picker on start, inline edit on session cards and capture view); JSON debug panel wired to IndexedDB; floating `+` toolbar with one-tap wishlist quick-add (bottom sheet, exercise autocomplete). Next: per-session JSON/MD export (Plan E 1.1/1.2/1.5).
