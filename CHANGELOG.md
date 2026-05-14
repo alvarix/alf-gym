@@ -2,6 +2,19 @@
 
 All notable changes to alf-gym are recorded here. Newest entries on top.
 
+## 2026-05-14 r4.6 (wishlist quick-add floating toolbar)
+
+### Added
+- **Floating toolbar (Plan F Feature 1)**: a `+` FAB button in the bottom-right corner expands to reveal a `★` wishlist quick-add action. Tapping it opens a bottom sheet with an exercise name input (autocompletes from the exercise library). Saves directly to `wishlist`; sheet dismisses with a flash toast. Hidden during live session capture view. No schema change.
+
+## 2026-05-14 r4.5 (editable session date, JSON panel fix)
+
+### Added
+- **Editable session date (Plan E 1.3)**: clicking ▶ now opens a datetime picker (defaults to now) before creating the session. Supports back-dating for "forgot to log live" and manual reconstruction of pre-app sessions.
+- **Edit date on session card**: each session in `#/sessions` has a `date` button that opens an inline date picker. The time-of-day is preserved; `endedAt` shifts by the same delta if present.
+- **Edit date in session capture view**: the session header now has an `edit date` button with an inline date picker.
+- **JSON panel wired to IndexedDB (Plan E 1.4)**: the debug `json` button now shows the actual stored state via `buildBackup()` by default ("Stored (IndexedDB)" mode). A toggle switches to the original Alpine in-memory view for debugging reactive state.
+
 ## 2026-05-05 r4.2 (session polish, Day B alt seed, E2E tests)
 
 ### Added

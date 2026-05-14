@@ -4,7 +4,7 @@ A mobile-first PWA for tracking gym sessions. Offline-first, fast capture, histo
 
 ## Status
 
-r4.0 — sessions capture flow complete. Builder (workouts, days, blocks, exercises, wishlist) and session capture (start, live set entry, pain marks, end with mood/env) all working. Next: r4.1 prefill last-cycle actuals + chevron increments.
+r4.6 — editable session date (datetime picker on start, inline edit on session cards and capture view); JSON debug panel wired to IndexedDB; floating `+` toolbar with one-tap wishlist quick-add (bottom sheet, exercise autocomplete). Next: per-session JSON/MD export (Plan E 1.1/1.2/1.5).
 
 ## Repo layout
 

@@ -20,6 +20,10 @@ function alfApp() {
     wishlist: [],
     showWishlistPanel: false,
 
+    // Plan F: floating toolbar
+    showToolbar: false,
+    wishlistSheet: null,  // null | { query: '' }
+
     // Sessions
     sessions: [],
     activeSessionId: null,
@@ -32,6 +36,8 @@ function alfApp() {
     syntax: localStorage.getItem('alfgym.syntax') === '1',
     showArchived: false,
     showJson: false,
+    jsonDump: '',
+    jsonDumpMode: 'idb',  // 'idb' = buildBackup(), 'alpine' = in-memory state
     flash: '',
 
     // Backup / Restore (Phase A) — stopgap before Supabase.
@@ -47,6 +53,10 @@ function alfApp() {
     sessionAdd: null,       // { blockId, exerciseQuery, sets, reps, load, sideScheme, holdSec, notable, notes, lockedScope? }
     sessionRemove: null,    // { perfId }
     sessionAddBlock: null,  // { name, type, optional, rounds, restBetweenRoundsSec }
+
+    // Plan E 1.3: session date editing.
+    sessionStartDraft: null,  // { dayId, startedAt: 'YYYY-MM-DDTHH:mm' }
+    sessionEditDate: null,    // { id, date: 'YYYY-MM-DD', _session }
 
     // Phase C: inline edit drafts. Kept as always-object (never null) to avoid
     // Alpine x-model teardown errors; check perfId/blockId for open state.
@@ -167,7 +177,11 @@ function alfApp() {
       this.sessions = arr;
     },
 
-    async startSessionForDay(dayId) {
+    /**
+     * @param {number} dayId
+     * @param {string} [startedAt] - ISO timestamp; defaults to now
+     */
+    async startSessionForDay(dayId, startedAt) {
       // Build a session by snapshotting day -> blocks -> prescriptions into performances.
       try {
       const day = await window.alfdb.days.get(dayId);
@@ -212,7 +226,7 @@ function alfApp() {
           newSessionId = await window.alfdb.sessions.add({
             dayId,
             workoutId: day.workoutId,
-            startedAt: new Date().toISOString(),
+            startedAt: startedAt || new Date().toISOString(),
             endedAt: null,
             status: 'in_progress',
             mood: null,
@@ -961,6 +975,53 @@ function alfApp() {
       this.showFlash('Session deleted');
     },
 
+    // ----- Plan E 1.3: session date editing -----
+
+    openSessionStartPicker(dayId) {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const local = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
+        + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+      this.sessionStartDraft = { dayId, startedAt: local };
+    },
+
+    cancelSessionStartPicker() { this.sessionStartDraft = null; },
+
+    async commitSessionStart() {
+      if (!this.sessionStartDraft) return;
+      const { dayId, startedAt } = this.sessionStartDraft;
+      this.sessionStartDraft = null;
+      await this.startSessionForDay(dayId, new Date(startedAt).toISOString());
+    },
+
+    openSessionDateEdit(s) {
+      this.sessionEditDate = { id: s.id, date: (s.startedAt || '').slice(0, 10), _session: s };
+    },
+
+    closeSessionDateEdit() { this.sessionEditDate = null; },
+
+    async commitSessionDateEdit() {
+      if (!this.sessionEditDate) return;
+      const { id, date, _session } = this.sessionEditDate;
+      const origIso = _session.startedAt || new Date().toISOString();
+      // Keep original time-of-day, change only the calendar date.
+      const origTime = origIso.slice(10); // 'T...Z' suffix
+      const newStartedAt = date + origTime;
+      const update = { startedAt: newStartedAt };
+      if (_session.endedAt) {
+        const delta = new Date(newStartedAt) - new Date(origIso);
+        update.endedAt = new Date(new Date(_session.endedAt).getTime() + delta).toISOString();
+      }
+      await window.alfdb.sessions.update(id, update);
+      Object.assign(_session, update);
+      if (this.activeSession && this.activeSession.id === id) {
+        Object.assign(this.activeSession, update);
+      }
+      await this.loadSessions();
+      this.sessionEditDate = null;
+      this.showFlash('Date updated');
+    },
+
     // ----- Wishlist actions -----
     async addToWishlistFromEditor() {
       const q = (this.editing && this.editing.exerciseQuery || '').trim();
@@ -988,6 +1049,30 @@ function alfApp() {
       await window.alfdb.wishlist.delete(item.id);
       await this.loadWishlist();
     },
+
+    // ----- Plan F: floating toolbar / wishlist quick-add -----
+
+    openWishlistSheet() {
+      this.showToolbar = false;
+      this.wishlistSheet = { query: '' };
+    },
+
+    closeWishlistSheet() { this.wishlistSheet = null; },
+
+    async commitWishlistQuickAdd() {
+      if (!this.wishlistSheet) return;
+      const name = (this.wishlistSheet.query || '').trim();
+      if (!name) { this.showFlash('Enter an exercise name'); return; }
+      await window.alfdb.wishlist.add({
+        exerciseName: name,
+        notes: '',
+        createdAt: new Date().toISOString()
+      });
+      await this.loadWishlist();
+      this.wishlistSheet = null;
+      this.showFlash('Added to wishlist: ' + name);
+    },
+
     async pullFromWishlist(item) {
       // Open the add-exercise draft with this name pre-filled.
       await this.openAddExercise();
@@ -1454,6 +1539,24 @@ function alfApp() {
     },
 
     // ----- Phase A: Backup / Restore -----
+
+    async refreshJsonDump() {
+      if (this.jsonDumpMode === 'idb') {
+        const data = await this.buildBackup();
+        this.jsonDump = JSON.stringify(data, null, 2);
+      } else {
+        const { workouts, days, blocks, prescriptions, exercises } = this;
+        this.jsonDump = JSON.stringify(
+          { workouts, days, blocks, prescriptions, exercises, _hash: window.location.hash },
+          null, 2
+        );
+      }
+    },
+
+    async setJsonDumpMode(mode) {
+      this.jsonDumpMode = mode;
+      await this.refreshJsonDump();
+    },
 
     async buildBackup() {
       const stores = {};
