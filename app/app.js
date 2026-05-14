@@ -73,6 +73,10 @@ function alfApp() {
         if (v) this.editing.token = this.tokenFromFields(this.editing.fields);
         else this.fieldsFromToken(this.editing.token, this.editing.fields);
       }
+      if (this.sessionEditPerf.perfId !== null) {
+        if (v) this.sessionEditPerf.fields.token = this.tokenFromFields(this.sessionEditPerf.fields);
+        else this.fieldsFromToken(this.sessionEditPerf.fields.token, this.sessionEditPerf.fields);
+      }
     },
 
     showFlash(msg) {
@@ -698,19 +702,18 @@ function alfApp() {
      * @param {object} perf - Performance row from activeSessionPerformances.
      */
     openEditPerf(perf) {
-      this.sessionEditPerf = {
-        perfId: perf.id,
-        fields: {
-          exerciseQuery: perf.exerciseName || '',
-          sets: perf.prescribedSets || 1,
-          reps: perf.prescribedReps == null ? '' : String(perf.prescribedReps),
-          load: perf.prescribedLoad || '',
-          sideScheme: perf.prescribedSideScheme || 'bilateral',
-          holdSec: perf.prescribedHoldSec || null,
-          notable: !!perf.prescribedNotable,
-          notes: perf.notes || ''
-        }
+      const fields = {
+        exerciseQuery: perf.exerciseName || '',
+        sets: perf.prescribedSets || 1,
+        reps: perf.prescribedReps == null ? '' : String(perf.prescribedReps),
+        load: perf.prescribedLoad || '',
+        sideScheme: perf.prescribedSideScheme || 'bilateral',
+        holdSec: perf.prescribedHoldSec || null,
+        notable: !!perf.prescribedNotable,
+        notes: perf.notes || ''
       };
+      fields.token = this.tokenFromFields(fields);
+      this.sessionEditPerf = { perfId: perf.id, fields };
     },
 
     cancelEditPerf() { this.sessionEditPerf = { perfId: null, fields: {} }; },
@@ -729,6 +732,8 @@ function alfApp() {
 
       // session-only perfs (null prescriptionId) are locked to session scope.
       if (perf.prescriptionId == null) scope = 'session';
+
+      if (this.syntax) this.fieldsFromToken(draft.fields.token, draft.fields);
 
       const ex = await this.resolveExerciseByName(draft.fields.exerciseQuery);
       if (!ex) { alert('Type or pick an exercise name.'); return; }

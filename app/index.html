@@ -490,39 +490,52 @@
                     </div>
                     <div class="form-row">
                       <label>exercise</label>
-                      <input x-model="sessionEditPerf.fields.exerciseQuery" list="alfgym-ex-options" />
+                      <input x-model="sessionEditPerf.fields.exerciseQuery" list="alfgym-ep-options" />
+                      <datalist id="alfgym-ep-options">
+                        <template x-for="e in exercises" :key="e.id"><option :value="e.name"></option></template>
+                      </datalist>
                     </div>
-                    <div class="row tight" style="gap: 6px;">
-                      <div class="form-row" style="flex: 1;">
-                        <label>sets</label>
-                        <input type="number" min="1" x-model.number="sessionEditPerf.fields.sets" />
+                    <!-- En mode: discrete fields -->
+                    <div x-show="!syntax">
+                      <div class="row tight" style="gap: 6px;">
+                        <div class="form-row" style="flex: 1;">
+                          <label>sets</label>
+                          <input type="number" min="1" x-model.number="sessionEditPerf.fields.sets" />
+                        </div>
+                        <div class="form-row" style="flex: 1;">
+                          <label>reps</label>
+                          <input x-model="sessionEditPerf.fields.reps" placeholder="8 or 5,8,12" />
+                        </div>
+                        <div class="form-row" style="flex: 1;">
+                          <label>load</label>
+                          <input x-model="sessionEditPerf.fields.load" placeholder="50 / band / ^15" />
+                        </div>
                       </div>
-                      <div class="form-row" style="flex: 1;">
-                        <label>reps</label>
-                        <input x-model="sessionEditPerf.fields.reps" placeholder="8 or 5,8,12" />
+                      <div class="row tight" style="gap: 6px;">
+                        <div class="form-row" style="flex: 1;">
+                          <label>side</label>
+                          <select x-model="sessionEditPerf.fields.sideScheme">
+                            <option value="bilateral">bilateral</option>
+                            <option value="unilateral-L-first">unilateral L-first</option>
+                            <option value="alternating">alternating</option>
+                          </select>
+                        </div>
+                        <div class="form-row" style="flex: 1;">
+                          <label>hold (s)</label>
+                          <input type="number" min="0" x-model="sessionEditPerf.fields.holdSec" placeholder="optional" />
+                        </div>
                       </div>
-                      <div class="form-row" style="flex: 1;">
-                        <label>load</label>
-                        <input x-model="sessionEditPerf.fields.load" placeholder="50 / band / ^15" />
+                      <div class="form-row">
+                        <label>notable</label>
+                        <input type="checkbox" x-model="sessionEditPerf.fields.notable" style="width: auto; margin: 6px 0;" />
                       </div>
                     </div>
-                    <div class="row tight" style="gap: 6px;">
-                      <div class="form-row" style="flex: 1;">
-                        <label>side</label>
-                        <select x-model="sessionEditPerf.fields.sideScheme">
-                          <option value="bilateral">bilateral</option>
-                          <option value="unilateral-L-first">unilateral L-first</option>
-                          <option value="alternating">alternating</option>
-                        </select>
+                    <!-- Syn mode: single token -->
+                    <div x-show="syntax">
+                      <div class="form-row">
+                        <label>token</label>
+                        <input class="mono" x-model="sessionEditPerf.fields.token" placeholder="50!;8-3" />
                       </div>
-                      <div class="form-row" style="flex: 1;">
-                        <label>hold (s)</label>
-                        <input type="number" min="0" x-model="sessionEditPerf.fields.holdSec" placeholder="optional" />
-                      </div>
-                    </div>
-                    <div class="form-row">
-                      <label>notable</label>
-                      <input type="checkbox" x-model="sessionEditPerf.fields.notable" style="width: auto; margin: 6px 0;" />
                     </div>
                     <div class="form-row">
                       <label>notes</label>
