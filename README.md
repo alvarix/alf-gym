@@ -10,7 +10,7 @@ To import your session data locally:
 
 ## Status
 
-r4.6 — editable session date (datetime picker on start, inline edit on session cards and capture view); JSON debug panel wired to IndexedDB; floating `+` toolbar with one-tap wishlist quick-add (bottom sheet, exercise autocomplete). Next: per-session JSON/MD export (Plan E 1.1/1.2/1.5).
+r4.7 — imported sessions now load their exercises; new sessions on imported days now create performances. Workarounds for a Dexie post-`bulkPut` index issue, an `openSession` double-fire race, and an Alpine duplicate-key error in `sessionGroupedBlocks()`. Postmortem at `docs/22-postmortem-import-load.md`. Next: per-session JSON/MD export (Plan E 1.1/1.2/1.5).
 
 ## Repo layout
 

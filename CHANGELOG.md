@@ -2,6 +2,20 @@
 
 All notable changes to alf-gym are recorded here. Newest entries on top.
 
+## 2026-05-15 r4.7 (import session load fix)
+
+### Fixed
+- **Imported sessions now load their exercises.** After restoring a backup, opening session 5 (or any imported session) showed no exercises despite the backup being valid. Root cause: Dexie secondary indexes return empty results for rows inserted via `bulkPut` during restore. Worked around by switching `openSession()` to a full-table scan + in-memory filter for `performances`, `sets`, and `painMarks`.
+- **Starting a new session on a day from imported data now creates performances.** Same Dexie-index issue affected the `blocks` and `prescriptions` lookups inside `startSessionForDay()`; converted to full-scan + filter, including the prev-session prefill lookup.
+- **`openSession` double-fire**: every navigation was triggering two simultaneous calls, racing each other and intermittently clobbering `activeSessionPerformances` with an empty result. Added an in-flight token; the second call now logs "skipped" and returns. Root cause of the double-fire is not yet identified — the guard sidesteps it.
+- **Alpine `Cannot read properties of undefined (reading 'after')` error** when rendering session view. `sessionGroupedBlocks()` could produce two groups with the same `blockId` when performances within a block were non-contiguous in `.order` (after mid-session edits). Groups now carry a unique `key` field (`<index>_<blockId>`); template uses `:key="g.key"`.
+
+### Diagnostic
+- Console logging kept in `openSession()` and `startSessionForDay()` until we have more confidence the workarounds hold. Remove after a few clean sessions.
+
+### Postmortem
+- Full writeup at `docs/22-postmortem-import-load.md`.
+
 ## 2026-05-14 r4.6 (wishlist quick-add floating toolbar)
 
 ### Added
