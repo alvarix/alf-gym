@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
   <title>alf-gym - Workout Builder</title>
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
   <link rel="stylesheet" href="assets/styles.css">
   <style>
     body { background: var(--bg); }
@@ -54,6 +55,10 @@
     .fab-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--text); color: var(--surface); border: none; font-size: 22px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; line-height: 1; }
     .fab-action { width: 40px; height: 40px; border-radius: 50%; background: var(--surface); color: var(--text); border: 1px solid var(--border); font-size: 16px; cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,.15); display: flex; align-items: center; justify-content: center; }
     .wb-sheet { position: fixed; bottom: 0; left: 0; right: 0; padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 16px); background: var(--surface); border-top: 1px solid var(--border); border-radius: var(--r-md) var(--r-md) 0 0; z-index: 92; box-shadow: 0 -4px 16px rgba(0,0,0,.1); }
+    @media (max-width: 500px) {
+      .menubar { flex-wrap: wrap; align-items: flex-start; }
+      .menubar .row.tight { flex-wrap: wrap; width: 100%; }
+    }
   </style>
 </head>
 <body>
