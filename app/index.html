@@ -329,7 +329,28 @@
             <template x-if="activeSession.status === 'in_progress'">
               <button class="primary" @click="openEndPanel()" style="background: var(--text); color: var(--surface);">end session</button>
             </template>
+            <template x-if="activeSession.status === 'completed'">
+              <span class="row tight" style="gap: 4px;">
+                <button class="tiny" @click="toggleSessionSummary()" :style="sessionSummaryOpen ? 'background: var(--accent-bg); color: var(--accent);' : ''">
+                  summary <span x-text="sessionSummaryOpen ? '▾' : '▸'"></span>
+                </button>
+                <button class="tiny" @click="exportSessionCsv()" title="download CSV (one row per set)">CSV</button>
+              </span>
+            </template>
           </div>
+        </div>
+
+        <!-- In-place summary panel (completed sessions) -->
+        <div x-show="activeSession.status === 'completed' && sessionSummaryOpen" class="ix-card" style="margin-bottom: 12px; background: var(--surface-2);">
+          <div class="row spread" style="margin-bottom: 8px;">
+            <strong style="font-weight: 500;">Session summary</strong>
+            <div class="row tight" style="gap: 4px;">
+              <button class="tiny" @click="copySessionSummary()">copy</button>
+              <button class="tiny" @click="downloadSessionSummary()">download .txt</button>
+              <button class="tiny" @click="toggleSessionSummary()">close</button>
+            </div>
+          </div>
+          <pre class="mono" style="white-space: pre-wrap; word-break: break-word; font-size: 12px; line-height: 1.5; margin: 0; max-height: 60vh; overflow: auto;" x-text="buildSessionSummary()"></pre>
         </div>
 
         <!-- End panel -->
@@ -369,7 +390,7 @@
               <template x-if="g.blockOptional">
                 <span class="pill-tag optional">optional</span>
               </template>
-              <button class="tiny" x-show="activeSession.status === 'in_progress' && sessionEditBlock.blockId !== g.blockId"
+              <button class="tiny" x-show="!sessionEditBlock.blockId || sessionEditBlock.blockId !== g.blockId"
                 @click="openEditBlock(g)" style="margin-left: auto;">edit</button>
             </div>
 
@@ -438,6 +459,11 @@
                   <div class="row tight" style="gap: 4px;">
                     <button class="tiny" x-show="activeSession.status === 'in_progress' && sessionEditPerf.perfId !== perf.id"
                       @click="openEditPerf(perf)">edit</button>
+                    <button class="tiny" x-show="activeSession.status === 'completed'"
+                      @click="perf._editingSets = !perf._editingSets"
+                      :style="perf._editingSets ? 'background:var(--accent-bg);color:var(--accent);' : ''">
+                      <span x-text="perf._editingSets ? 'lock' : 'edit'"></span>
+                    </button>
                     <button class="tiny" x-show="activeSession.status === 'in_progress'"
                       @click="openSessionRemove(perf)" title="remove from session"
                       style="color: var(--danger);">×</button>
@@ -455,8 +481,8 @@
                   <thead>
                     <tr style="color: var(--text-3); font-size: 11px;">
                       <th style="text-align: left; width: 24px; padding: 2px 4px 2px 0;">#</th>
-                      <th style="text-align: left; padding: 2px 4px;">reps</th>
                       <th style="text-align: left; padding: 2px 4px;">load</th>
+                      <th style="text-align: left; padding: 2px 4px;">reps</th>
                       <th style="width: 30px; padding: 2px 4px;">done</th>
                       <th style="width: 24px; padding: 2px 0;"></th>
                     </tr>
@@ -466,23 +492,23 @@
                       <tr>
                         <td class="mono dim" style="padding: 2px 4px 2px 0;" x-text="s.setIndex"></td>
                         <td style="padding: 2px 4px;">
-                          <input type="number" step="any"
-                            :value="s.prefilled ? '' : s.reps"
-                            :placeholder="s.prefilled ? s.reps : prescribedForSet(perf.prescribedReps, s.setIndex)"
-                            @change="updateSetField(perf, s, 'reps', $event.target.value)"
-                            :disabled="activeSession.status !== 'in_progress'"
-                            style="height:28px;padding:0 6px;font-family:var(--mono);font-size:13px;min-width:4ch;" />
-                        </td>
-                        <td style="padding: 2px 4px;">
                           <input
                             :value="s.prefilled ? '' : s.load"
                             :placeholder="s.prefilled ? s.load : prescribedForSet(perf.prescribedLoad, s.setIndex)"
                             @change="updateSetField(perf, s, 'load', $event.target.value)"
-                            :disabled="activeSession.status !== 'in_progress'"
+                            :disabled="activeSession.status !== 'in_progress' && !perf._editingSets"
+                            style="height:28px;padding:0 6px;font-family:var(--mono);font-size:13px;min-width:4ch;" />
+                        </td>
+                        <td style="padding: 2px 4px;">
+                          <input type="number" step="any"
+                            :value="s.prefilled ? '' : s.reps"
+                            :placeholder="s.prefilled ? s.reps : prescribedForSet(perf.prescribedReps, s.setIndex)"
+                            @change="updateSetField(perf, s, 'reps', $event.target.value)"
+                            :disabled="activeSession.status !== 'in_progress' && !perf._editingSets"
                             style="height:28px;padding:0 6px;font-family:var(--mono);font-size:13px;min-width:4ch;" />
                         </td>
                         <td style="padding: 2px 4px; text-align: center;">
-                          <input type="checkbox" :checked="s.done" @change="toggleSetDone(s)" :disabled="activeSession.status !== 'in_progress'" style="width: auto; height: auto; margin: 0;" />
+                          <input type="checkbox" :checked="s.done" @change="toggleSetDone(s)" :disabled="activeSession.status !== 'in_progress' && !perf._editingSets" style="width: auto; height: auto; margin: 0;" />
                         </td>
                         <td style="padding: 2px 0; text-align: right;">
                           <button class="tiny" x-show="activeSession.status === 'in_progress'" @click="removeSet(perf, s)" title="remove set">×</button>
@@ -497,22 +523,21 @@
                   <input class="mono" style="width: 100%; height: 28px; padding: 0 6px; font-size: 13px; box-sizing: border-box;"
                     :value="tokenFromSets(perf._sets)"
                     @change="applyAllSetsToken(perf, $event.target.value)"
-                    :disabled="activeSession.status !== 'in_progress'"
+                    :disabled="!perf._editingSets"
                     placeholder="50!8 / 55!8 / 60!8" />
                   <div class="row tight" style="gap: 10px; margin-top: 4px; font-size: 11px; color: var(--text-3);">
                     <template x-for="s in perf._sets" :key="s.id">
                       <label style="display: flex; align-items: center; gap: 3px; cursor: pointer;">
                         <span class="mono" x-text="s.setIndex"></span>
-                        <input type="checkbox" :checked="s.done" @change="toggleSetDone(s)" :disabled="activeSession.status !== 'in_progress'" style="width: auto; height: auto; margin: 0;" />
+                        <input type="checkbox" :checked="s.done" @change="toggleSetDone(s)" style="width: auto; height: auto; margin: 0;" />
                       </label>
                     </template>
                   </div>
                 </div>
 
-                <div class="row tight" style="margin-top: 6px; gap: 6px; flex-wrap: wrap;" x-show="activeSession.status === 'in_progress'">
+                <div class="row tight" style="margin-top: 6px; gap: 6px; flex-wrap: wrap;" x-show="activeSession.status === 'in_progress' || perf._editingSets">
                   <button class="tiny" @click="addSet(perf)">+ set</button>
-                  <button class="tiny" @click="repeatLastSet(perf)" title="copy last set's values, mark done">repeat last</button>
-                  <button class="tiny" @click="addPainToPerformance(perf)">$ pain</button>
+                  <button class="tiny" x-show="activeSession.status === 'in_progress'" @click="addPainToPerformance(perf)">$ pain</button>
                 </div>
 
                 <template x-if="perf._pains && perf._pains.length">
@@ -525,7 +550,7 @@
 
                 <div class="form-row" style="margin-top: 6px;">
                   <label>note</label>
-                  <input :value="perf.notes || ''" @change="updatePerformanceNotes(perf, $event.target.value)" placeholder="optional" :disabled="activeSession.status !== 'in_progress'" />
+                  <input :value="perf.notes || ''" @change="updatePerformanceNotes(perf, $event.target.value)" placeholder="optional" />
                 </div>
 
                 <!-- Edit-perf inline form (Phase C) -->
@@ -791,7 +816,7 @@
     </template>
 
     <div class="wizard-text">
-      <strong>Where you are:</strong> live capture for one session. Each set row holds your actual reps and load. Faded italic values are prefilled from your last session - touch them to confirm. Tap <strong>done</strong> to mark a set complete. Use <strong>repeat last</strong> for unchanged sets, <strong>+ set</strong> for an extra round, <strong>$ pain</strong> to log a pain mark on this exercise. End when finished.
+      <strong>Where you are:</strong> live capture for one session. Each set row holds your actual reps and load. Prefilled values from your last session show as placeholders — type to override or check the box to confirm. Use <strong>+ set</strong> for an extra round, <strong>$ pain</strong> to log a pain mark on this exercise. End when finished.
     </div>
   </div>
 

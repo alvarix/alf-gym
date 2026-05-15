@@ -10,7 +10,7 @@ To import your session data locally:
 
 ## Status
 
-r4.7 — imported sessions now load their exercises; new sessions on imported days now create performances. Workarounds for a Dexie post-`bulkPut` index issue, an `openSession` double-fire race, and an Alpine duplicate-key error in `sessionGroupedBlocks()`. Postmortem at `docs/22-postmortem-import-load.md`. Next: per-session JSON/MD export (Plan E 1.1/1.2/1.5).
+r4.8 — session capture UI overhaul: prefill from last session as input placeholders (prescribed as fallback), exercise cues drawer, day name shown on session list and header, load/reps column order swapped, side column removed, set rows locked until `edit` on completed sessions. See CHANGELOG.
 
 ## Repo layout
 

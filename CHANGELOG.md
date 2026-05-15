@@ -2,6 +2,25 @@
 
 All notable changes to alf-gym are recorded here. Newest entries on top.
 
+## 2026-05-15 r4.8 (session capture UI overhaul)
+
+### Added
+- **Exercise cues field**: editable textarea in the block exercise editor (persisted on the `exercises` record). Shown in session capture as a collapsible drawer (`cues ▸`) per exercise — keeps the card compact for long cue text.
+- **Day name on sessions**: both the session list (`Workout 9.2 · Day A - Front`) and the session header now show the day variation name. New sessions store `dayName` on the record; old sessions look it up from the days table on load.
+- **Edit mode for completed sessions**: each exercise card on a finished session shows an `edit` button. Tapping it unlocks the set value inputs (load/reps) and exposes `+ set` for that exercise. Re-tap to lock. Prevents accidental edits while reviewing history.
+
+### Changed
+- **Prefill display**: last session's values now appear as HTML `placeholder` text on empty inputs rather than faded italic actual values. Checking a set's done box confirms those values as the record. Prescribed values appear as placeholder fallback when no prior session exists.
+- **Per-set prescribed placeholders**: prescribed strings like `"8,10,12"` and `"50,50,50"` are now split per set index so each set sees its own value, not the whole comma-separated string.
+- **Column order**: load is now left of reps in the set table (matches the more natural "what weight, how many" read order).
+- **Side column removed** from set rows.
+- **`type="number"`** on the reps input; `min-width: 4ch` on load and reps inputs.
+- **Mobile zoom disabled** via viewport `user-scalable=no, maximum-scale=1`.
+- **"repeat last" button removed** — superseded by prefill placeholder behaviour.
+
+### Fixed
+- `tokenFromSet` now returns `''` for prefilled sets in syntax mode, keeping the token string clean until the user actually logs values.
+
 ## 2026-05-15 r4.7 (import session load fix)
 
 ### Fixed

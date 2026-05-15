@@ -33,6 +33,7 @@ function alfApp() {
     endingSession: false,            // shows mood/env panel
     endMood: null,
     endEnv: 'gym',
+    sessionSummaryOpen: false,       // in-place summary panel on completed sessions
 
     syntax: localStorage.getItem('alfgym.syntax') === '1',
     showArchived: false,
@@ -330,10 +331,12 @@ function alfApp() {
           p._sets = sets;
           p._pains = allPains.filter(pm => pm.performanceId === p.id);
           p._showCues = false;
+          p._editingSets = false;
         }
         this.activeSessionPerformances = perfs;
         this.view = 'session';
         this.endingSession = false;
+        this.sessionSummaryOpen = false;
         console.log(`[openSession ${callId}] done — activeSessionPerformances.length=${this.activeSessionPerformances.length}`);
       } catch (e) {
         console.error(`[openSession ${callId}] error:`, e.name, e.message, e);
@@ -725,7 +728,7 @@ function alfApp() {
         newSets.push({ id: setId, performanceId: perfId, setIndex: i, reps: '', load: '', side: '', holdSec: null, notable: false, done: false, prefilled: false, notes: '' });
       }
 
-      const newPerf = { id: perfId, ...perfRow, _sets: newSets, _pains: [], _showCues: false };
+      const newPerf = { id: perfId, ...perfRow, _sets: newSets, _pains: [], _showCues: false, _editingSets: false };
       let insertIdx = this.activeSessionPerformances.length;
       for (let i = this.activeSessionPerformances.length - 1; i >= 0; i--) {
         if (this.activeSessionPerformances[i].blockId === targetBlockId) {
@@ -1031,6 +1034,143 @@ function alfApp() {
       this.activeSession.env = this.endEnv;
       this.endingSession = false;
       this.showFlash('Session saved');
+    },
+
+    // ----- Completed-session exports -----
+
+    /** Toggle in-place human-readable summary panel. */
+    toggleSessionSummary() { this.sessionSummaryOpen = !this.sessionSummaryOpen; },
+
+    /**
+     * Build a human-readable plain-text summary of the active session,
+     * including blocks, sets (with prescribed vs actual), pain marks, and notes.
+     * @returns {string}
+     */
+    buildSessionSummary() {
+      const s = this.activeSession;
+      if (!s) return '';
+      const lines = [];
+      const date = (s.startedAt || '').slice(0, 10);
+      const startT = this.sessionStartTime(s);
+      const dur = this.sessionElapsed(s);
+      const wk = this.sessionWorkoutName(s);
+      const day = s._dayName || '';
+      lines.push(`${date} ${startT} — ${wk}${day ? ' / ' + day : ''}`);
+      const meta = [`duration ${dur}`];
+      if (s.env) meta.push(`env ${s.env}`);
+      if (s.mood) meta.push(`mood ${s.mood}/5`);
+      lines.push(meta.join(' · '));
+      lines.push('');
+
+      const groups = this.sessionGroupedBlocks();
+      groups.forEach((g, gi) => {
+        let head = `${gi + 1}. ${g.blockName}`;
+        if (g.blockType === 'circuit') head += ` (circuit · ${g.blockRounds} rounds)`;
+        if (g.blockOptional) head += ' (optional)';
+        lines.push(head);
+        g.performances.forEach((p, pi) => {
+          const presc = [];
+          if (p.prescribedLoad) presc.push(`load ${p.prescribedLoad}`);
+          if (p.prescribedReps) presc.push(`reps ${p.prescribedReps}`);
+          const prescStr = presc.length ? ` — prescribed: ${presc.join(', ')}` : '';
+          lines.push(`  ${gi + 1}.${pi + 1} ${p.exerciseName}${prescStr}`);
+          (p._sets || []).forEach(st => {
+            const parts = [`#${st.setIndex}`];
+            const load = st.prefilled ? `(${st.load})` : (st.load || '—');
+            const reps = st.prefilled ? `(${st.reps})` : (st.reps || '—');
+            parts.push(`load ${load}`, `reps ${reps}`);
+            if (st.holdSec) parts.push(`${st.holdSec}s hold`);
+            if (st.notable) parts.push('notable');
+            parts.push(st.done ? 'done' : 'not done');
+            if (st.notes) parts.push(`note: ${st.notes}`);
+            lines.push(`      ${parts.join(' · ')}`);
+          });
+          if (p._pains && p._pains.length) {
+            const pains = p._pains.map(pn => `$${pn.severity} ${pn.side || ''} ${pn.region || ''}`.trim()).join('; ');
+            lines.push(`      pain: ${pains}`);
+          }
+          if (p.notes) lines.push(`      note: ${p.notes}`);
+        });
+        lines.push('');
+      });
+      return lines.join('\n').trimEnd() + '\n';
+    },
+
+    /** Filename stem for exports tied to the active session. */
+    _sessionFileStem() {
+      const s = this.activeSession;
+      const date = (s && s.startedAt || '').slice(0, 10) || 'session';
+      const wk = (this.sessionWorkoutName(s) || 'session').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
+      return `alfgym-${date}-${wk}`;
+    },
+
+    downloadSessionSummary() {
+      const text = this.buildSessionSummary();
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = this._sessionFileStem() + '.txt';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.showFlash('Summary downloaded');
+    },
+
+    async copySessionSummary() {
+      await navigator.clipboard.writeText(this.buildSessionSummary());
+      this.showFlash('Summary copied');
+    },
+
+    /** Quote a CSV cell if it contains comma, quote, or newline. */
+    _csvCell(v) {
+      if (v === null || v === undefined) return '';
+      const s = String(v);
+      if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    },
+
+    /**
+     * Build a CSV (one row per set) for the active session.
+     * @returns {string}
+     */
+    buildSessionCsv() {
+      const s = this.activeSession;
+      if (!s) return '';
+      const date = (s.startedAt || '').slice(0, 10);
+      const wk = this.sessionWorkoutName(s) || '';
+      const day = s._dayName || '';
+      const cols = ['date','workout','day','block','block_type','exercise','set','prescribed_load','prescribed_reps','actual_load','actual_reps','hold_sec','done','notable','prefilled','set_notes','perf_notes','pain'];
+      const rows = [cols.join(',')];
+      const groups = this.sessionGroupedBlocks();
+      for (const g of groups) {
+        for (const p of g.performances) {
+          const painStr = (p._pains || []).map(pn => `$${pn.severity} ${pn.side || ''} ${pn.region || ''}`.trim()).join('; ');
+          const sets = p._sets && p._sets.length ? p._sets : [{ setIndex: '', load: '', reps: '', holdSec: '', done: '', notable: '', prefilled: '', notes: '' }];
+          for (const st of sets) {
+            const row = [
+              date, wk, day, g.blockName, g.blockType, p.exerciseName, st.setIndex,
+              p.prescribedLoad || '', p.prescribedReps || '',
+              st.load || '', st.reps || '', st.holdSec || '',
+              st.done ? 'yes' : 'no', st.notable ? 'yes' : 'no', st.prefilled ? 'yes' : 'no',
+              st.notes || '', p.notes || '', painStr
+            ].map(v => this._csvCell(v));
+            rows.push(row.join(','));
+          }
+        }
+      }
+      return rows.join('\n') + '\n';
+    },
+
+    exportSessionCsv() {
+      const csv = this.buildSessionCsv();
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = this._sessionFileStem() + '.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.showFlash('CSV downloaded');
     },
 
     async deleteSession(s) {
