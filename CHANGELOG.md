@@ -2,6 +2,15 @@
 
 All notable changes to alf-gym are recorded here. Newest entries on top.
 
+## 2026-05-15 r4.9
+
+### Fixed
+- **Session timer now live-updates**: elapsed time was stuck at 0 because `sessionElapsed` called `new Date()` once on render with no mechanism to re-render. Added a reactive `now` property ticked every 30s via `setInterval`; `sessionElapsed` reads `this.now` so Alpine re-renders the display automatically.
+
+### Changed
+- **FAB visible only during active session**: floating toolbar now shows only when `status === 'in_progress'`, not on all non-session views.
+- **Wishlist sheet backdrop**: semi-transparent overlay added behind the wishlist quick-add sheet; tapping it closes the sheet.
+
 ## 2026-05-15 r4.8 (session capture UI overhaul)
 
 ### Added
