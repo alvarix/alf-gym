@@ -175,6 +175,10 @@ function alfApp() {
     async loadSessions() {
       const arr = await window.alfdb.sessions.toArray();
       arr.sort((a, b) => (b.startedAt || '').localeCompare(a.startedAt || ''));
+      const allDays = await window.alfdb.days.toArray();
+      const dayMap = {};
+      for (const d of allDays) dayMap[d.id] = d.name;
+      for (const s of arr) s._dayName = s.dayName || dayMap[s.dayId] || '';
       this.sessions = arr;
     },
 
@@ -234,6 +238,7 @@ function alfApp() {
         async () => {
           newSessionId = await window.alfdb.sessions.add({
             dayId,
+            dayName: day.name,
             workoutId: day.workoutId,
             startedAt: startedAt || new Date().toISOString(),
             endedAt: null,
@@ -304,6 +309,12 @@ function alfApp() {
         console.log(`[openSession ${callId}] session=`, s ? { id: s.id, dayId: s.dayId, status: s.status } : null);
         if (!s) return this.gotoHash('#/');
         await this.loadExercises();
+        if (!s.dayName) {
+          const day = await window.alfdb.days.get(s.dayId);
+          s._dayName = day ? day.name : '';
+        } else {
+          s._dayName = s.dayName;
+        }
         this.activeSessionId = id;
         this.activeSession = s;
         const allPerfs = await window.alfdb.performances.toArray();
@@ -318,6 +329,7 @@ function alfApp() {
           sets.sort((a, b) => a.setIndex - b.setIndex);
           p._sets = sets;
           p._pains = allPains.filter(pm => pm.performanceId === p.id);
+          p._showCues = false;
         }
         this.activeSessionPerformances = perfs;
         this.view = 'session';
@@ -713,7 +725,7 @@ function alfApp() {
         newSets.push({ id: setId, performanceId: perfId, setIndex: i, reps: '', load: '', side: '', holdSec: null, notable: false, done: false, prefilled: false, notes: '' });
       }
 
-      const newPerf = { id: perfId, ...perfRow, _sets: newSets, _pains: [] };
+      const newPerf = { id: perfId, ...perfRow, _sets: newSets, _pains: [], _showCues: false };
       let insertIdx = this.activeSessionPerformances.length;
       for (let i = this.activeSessionPerformances.length - 1; i >= 0; i--) {
         if (this.activeSessionPerformances[i].blockId === targetBlockId) {
@@ -916,12 +928,12 @@ function alfApp() {
     },
 
     tokenFromSet(s) {
+      if (s.prefilled) return '';
       let out = s.load || '';
       if (s.notable) out += '!';
       if (s.holdSec) out += (out ? ' ' : '') + s.holdSec + 's';
       if (s.reps) {
-        const sep = (s.side === 'L' || s.side === 'R') ? ';' : ' ';
-        out += (out ? sep : '') + s.reps;
+        out += (out ? ' ' : '') + s.reps;
       }
       return out.trim();
     },
@@ -1142,6 +1154,11 @@ function alfApp() {
 
     exerciseName(id) { const ex = this.exercises.find(e => e.id === id); return ex ? ex.name : '?'; },
     exerciseCues(id) { const ex = this.exercises.find(e => e.id === id); return ex ? (ex.cues || '') : ''; },
+    prescribedForSet(str, setIndex) {
+      if (!str && str !== 0) return '';
+      const parts = String(str).split(',').map(p => p.trim());
+      return parts[setIndex - 1] ?? parts[parts.length - 1] ?? '';
+    },
     workoutName(id) { const w = this.workouts.find(x => x.id === id); return w ? w.name : '?'; },
 
     // ----- Visible workouts -----
