@@ -73,6 +73,7 @@ function alfApp() {
     async init() {
       await window.alfdbSeed();
       await this.loadWishlist();
+      await this.loadExercises();
       window.addEventListener('hashchange', () => this.routeFromHash());
       await this.routeFromHash();
     },

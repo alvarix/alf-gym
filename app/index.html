@@ -1289,6 +1289,9 @@
 
   <!-- Wishlist quick-add sheet -->
   <template x-if="wishlistSheet">
+    <div @click="closeWishlistSheet()" style="position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 91;"></div>
+  </template>
+  <template x-if="wishlistSheet">
     <div class="wb-sheet">
       <div style="font-weight: 500; margin-bottom: 10px;">Add to wishlist</div>
       <input
