@@ -1281,6 +1281,7 @@
   <div x-show="view === 'session' && activeSession && activeSession.status === 'in_progress'" class="fab-wrap">
     <template x-if="showToolbar">
       <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+        <button class="fab-action" @click="openNoteSheet()" title="add note" style="font-size: 16px;">✎</button>
         <button class="fab-action" @click="openWishlistSheet()" title="add to wishlist" style="font-size: 18px;">★</button>
       </div>
     </template>
@@ -1311,6 +1312,38 @@
       <div class="row tight">
         <button @click="closeWishlistSheet()">cancel</button>
         <button @click="commitWishlistQuickAdd()" style="background: var(--text); color: var(--surface); font-weight: 500;">save</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- Note quick-add sheet -->
+  <template x-if="noteSheet">
+    <div @click="closeNoteSheet()" style="position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 91;"></div>
+  </template>
+  <template x-if="noteSheet">
+    <div class="wb-sheet">
+      <div style="font-weight: 500; margin-bottom: 10px;">Add note</div>
+      <div class="form-row" style="margin-bottom: 10px;">
+        <label>date</label>
+        <input type="date" x-model="noteSheet.date" style="font-size: 14px;" />
+      </div>
+      <textarea
+        x-model="noteSheet.body"
+        placeholder="felt sharp pain on rep 7 / PT cue: tuck pelvis / saw someone doing X..."
+        @keydown.meta.enter="commitNoteQuickAdd()"
+        rows="4"
+        style="width: 100%; font-size: 14px; padding: 8px; box-sizing: border-box; margin-bottom: 10px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); font-family: var(--sans); resize: vertical;"
+        x-init="$nextTick(() => $el.focus())"
+      ></textarea>
+      <template x-if="activeSession && activeSession.status === 'in_progress'">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 10px; cursor: pointer;">
+          <input type="checkbox" x-model="noteSheet.pinToSession" style="width: auto; height: auto; margin: 0;" />
+          pin to this session
+        </label>
+      </template>
+      <div class="row tight">
+        <button @click="closeNoteSheet()">cancel</button>
+        <button @click="commitNoteQuickAdd()" style="background: var(--text); color: var(--surface); font-weight: 500;">save</button>
       </div>
     </div>
   </template>

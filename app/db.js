@@ -41,6 +41,11 @@ db.version(5).stores({
   painMarks:    '++id, sessionId, performanceId, ts'
 });
 
+// v6: free-form notes, date-keyed with optional session pin.
+db.version(6).stores({
+  notes: '++id, date, sessionId, createdAt, updatedAt'
+});
+
 // Day skeletons by group key.
 window.DAY_SKELETONS = {
   A: ['Warmup', 'Squat', 'Push', 'Anti-Rotation', 'Plyo'],
@@ -263,6 +268,7 @@ async function resetAll() {
     db.performances.clear(),
     db.sets.clear(),
     db.painMarks.clear(),
+    db.notes.clear(),
     db.meta.clear()
   ]);
   await seedIfEmpty();

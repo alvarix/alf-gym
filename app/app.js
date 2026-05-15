@@ -23,6 +23,7 @@ function alfApp() {
     // Plan F: floating toolbar
     showToolbar: false,
     wishlistSheet: null,  // null | { query: '' }
+    noteSheet: null,      // null | { body: '', date: 'YYYY-MM-DD', pinToSession: false }
 
     // Sessions
     sessions: [],
@@ -44,7 +45,7 @@ function alfApp() {
 
     // Backup / Restore (Phase A) — stopgap before Supabase.
     BACKUP_SCHEMA_VERSION: 5,
-    BACKUP_STORES: ['workouts','days','blocks','exercises','prescriptions','sessions','performances','sets','painMarks','trackers','wishlist','meta'],
+    BACKUP_STORES: ['workouts','days','blocks','exercises','prescriptions','sessions','performances','sets','painMarks','trackers','wishlist','notes','meta'],
     showBackup: false,
     importText: '',
     importPreview: null,
@@ -1273,6 +1274,32 @@ function alfApp() {
     },
 
     closeWishlistSheet() { this.wishlistSheet = null; },
+
+    openNoteSheet() {
+      this.showToolbar = false;
+      const today = new Date().toISOString().slice(0, 10);
+      const canPin = !!(this.activeSession && this.activeSession.status === 'in_progress');
+      this.noteSheet = { body: '', date: today, pinToSession: canPin };
+    },
+
+    closeNoteSheet() { this.noteSheet = null; },
+
+    async commitNoteQuickAdd() {
+      if (!this.noteSheet) return;
+      const body = (this.noteSheet.body || '').trim();
+      if (!body) { this.showFlash('Type a note first'); return; }
+      const now = new Date().toISOString();
+      const sessionId = (this.noteSheet.pinToSession && this.activeSession) ? this.activeSession.id : null;
+      await window.alfdb.notes.add({
+        body,
+        date: this.noteSheet.date,
+        sessionId,
+        createdAt: now,
+        updatedAt: now
+      });
+      this.noteSheet = null;
+      this.showFlash('Note saved');
+    },
 
     async commitWishlistQuickAdd() {
       if (!this.wishlistSheet) return;
