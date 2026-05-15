@@ -70,12 +70,15 @@ function alfApp() {
     draftDay: null,
     wizard: null,
 
+    now: new Date(),
+
     async init() {
       await window.alfdbSeed();
       await this.loadWishlist();
       await this.loadExercises();
       window.addEventListener('hashchange', () => this.routeFromHash());
       await this.routeFromHash();
+      setInterval(() => { this.now = new Date(); }, 30000);
     },
 
     setSyntax(v) {
@@ -919,7 +922,7 @@ function alfApp() {
     sessionElapsed(s) {
       if (!s) return '';
       const start = new Date(s.startedAt);
-      const end = s.endedAt ? new Date(s.endedAt) : new Date();
+      const end = s.endedAt ? new Date(s.endedAt) : this.now;
       const mins = Math.max(0, Math.round((end - start) / 60000));
       const h = Math.floor(mins / 60);
       const m = mins % 60;

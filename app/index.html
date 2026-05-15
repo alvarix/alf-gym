@@ -1277,8 +1277,8 @@
   </div>
 
   <!-- Floating toolbar (Plan F Feature 1: wishlist quick-add) -->
-  <!-- Hidden during live session capture to avoid competing with set-entry -->
-  <div x-show="view !== 'session'" class="fab-wrap">
+  <!-- Visible only during an in-progress session -->
+  <div x-show="view === 'session' && activeSession && activeSession.status === 'in_progress'" class="fab-wrap">
     <template x-if="showToolbar">
       <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
         <button class="fab-action" @click="openWishlistSheet()" title="add to wishlist" style="font-size: 18px;">★</button>
