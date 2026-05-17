@@ -2,6 +2,20 @@
 
 All notable changes to alf-gym are recorded here. Newest entries on top.
 
+## 2026-05-17 r4.10
+
+### Added
+- **Session progress bar**: under the header, a thin filled bar plus `done/total sets · pct%` meta. Reads from the live `_sets` array via `sessionProgress()` so it ticks as boxes are checked.
+- **Email session summary**: `email` button on completed sessions opens a `mailto:` with the human-readable summary in the body, subject `alf-gym <date> — <workout> / <day>`. Zero infra — works with whatever mail client the device has.
+- **Mid-session "add exercise to new block" now lets you change scope**: previously the exercise scope was locked to the block's scope (single `add` button). When the block exists in the workout (template-scope), all three buttons show. For session-only blocks, scope stays forced to session (the block doesn't exist in the workout, so template/fork can't host it).
+
+### Changed
+- **Mobile menubar**: title row gets full width, action buttons wrap with proper gaps and taller (32px) touch targets.
+
+### Fixed
+- Removed 8 stale diagnostic `console.log` calls in `openSession`, `startSessionForDay`, and `confirmImport` (postmortem follow-up from r4.7).
+- Two pre-existing Playwright tests broken by the r4.5 date picker step: helper `startSessionFromFirstDay()` now opens the picker and commits with default-now.
+
 ## 2026-05-15 r4.9
 
 ### Fixed

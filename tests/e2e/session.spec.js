@@ -44,11 +44,16 @@ test('start session button present on workout view', async ({ page }) => {
   expect(count).toBeGreaterThan(0);
 });
 
+// r4.5 added a datetime picker between the ▶ button and the new session.
+// Helper opens the picker, then commits with its default value (now).
+async function startSessionFromFirstDay(page) {
+  await page.locator('button[title="start session"]').first().click();
+  await page.getByRole('button', { name: '▶ start' }).click();
+}
+
 test('start session navigates to capture view', async ({ page }) => {
   await goToWorkout92(page);
-
-  // Click the ▶ button on the first day.
-  await page.locator('button[title="start session"]').first().click();
+  await startSessionFromFirstDay(page);
 
   // Should land on the session capture view.
   await expect(page).toHaveURL(/\#\/s\/\d+/, { timeout: 5000 });
@@ -59,12 +64,24 @@ test('start session navigates to capture view', async ({ page }) => {
 
 test('set rows render in en mode', async ({ page }) => {
   await goToWorkout92(page);
-  await page.locator('button[title="start session"]').first().click();
+  await startSessionFromFirstDay(page);
   await expect(page).toHaveURL(/\#\/s\/\d+/, { timeout: 5000 });
 
   // In en mode: reps column header visible, token column hidden.
   await expect(page.locator('th', { hasText: 'reps' }).first()).toBeVisible({ timeout: 3000 });
   await expect(page.locator('th', { hasText: 'token' }).first()).toBeHidden();
+});
+
+test('session progress bar shows sets done / total', async ({ page }) => {
+  await goToWorkout92(page);
+  await startSessionFromFirstDay(page);
+  await expect(page).toHaveURL(/\#\/s\/\d+/, { timeout: 5000 });
+
+  // Progress bar should be visible with 0/N sets and 0%.
+  const meta = page.locator('.progress-meta').first();
+  await expect(meta).toBeVisible({ timeout: 3000 });
+  await expect(meta).toContainText(/0\/\d+ sets/);
+  await expect(meta).toContainText('0%');
 });
 
 test('no JS errors on app load', async ({ page }) => {

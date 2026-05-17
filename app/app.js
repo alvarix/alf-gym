@@ -203,7 +203,6 @@ function alfApp() {
       const allBlocks = await window.alfdb.blocks.toArray();
       const blocks = allBlocks.filter(b => b.dayId === dayId);
       blocks.sort((a, b) => a.order - b.order);
-      console.log(`[startSessionForDay] dayId=${dayId} blocks.matched=${blocks.length}/${allBlocks.length}`);
 
       // Find the most recent completed session for this same day to prefill actuals.
       const allDaySessions = await window.alfdb.sessions.toArray();
@@ -231,7 +230,6 @@ function alfApp() {
       for (const b of blocks) {
         const prescriptions = allPrescriptions.filter(p => p.blockId === b.id);
         prescriptions.sort((a, b) => a.order - b.order);
-        console.log(`[startSessionForDay] block=${b.id} (${b.name}) prescriptions=${prescriptions.length}`);
         for (const p of prescriptions) {
           const ex = await window.alfdb.exercises.get(p.exerciseId);
           blockPrescriptions.push({ block: b, prescription: p, exerciseName: ex ? ex.name : '?' });
@@ -300,19 +298,13 @@ function alfApp() {
     },
 
     async openSession(id) {
-      const callId = Math.random().toString(36).slice(2, 7);
-      console.log(`[openSession ${callId}] start id=${id} type=${typeof id}`);
       // Guard: hashchange has been observed firing this twice in rapid succession.
       // Drop a duplicate call for the same id while one is already in flight.
-      if (this._openSessionInFlight === id) {
-        console.log(`[openSession ${callId}] skipped — already loading id=${id}`);
-        return;
-      }
+      if (this._openSessionInFlight === id) return;
       this._openSessionInFlight = id;
       this.sessionLoadError = false;
       try {
         const s = await window.alfdb.sessions.get(id);
-        console.log(`[openSession ${callId}] session=`, s ? { id: s.id, dayId: s.dayId, status: s.status } : null);
         if (!s) return this.gotoHash('#/');
         await this.loadExercises();
         if (!s.dayName) {
@@ -324,9 +316,7 @@ function alfApp() {
         this.activeSessionId = id;
         this.activeSession = s;
         const allPerfs = await window.alfdb.performances.toArray();
-        const sessionIds = [...new Set(allPerfs.map(p => p.sessionId))];
         const perfs = allPerfs.filter(p => p.sessionId === id);
-        console.log(`[openSession ${callId}] allPerfs.length=${allPerfs.length} sessionIds=${JSON.stringify(sessionIds)} matched=${perfs.length}`);
         perfs.sort((a, b) => a.order - b.order);
         const allSets = await window.alfdb.sets.toArray();
         const allPains = await window.alfdb.painMarks.toArray();
@@ -342,9 +332,8 @@ function alfApp() {
         this.view = 'session';
         this.endingSession = false;
         this.sessionSummaryOpen = false;
-        console.log(`[openSession ${callId}] done — activeSessionPerformances.length=${this.activeSessionPerformances.length}`);
       } catch (e) {
-        console.error(`[openSession ${callId}] error:`, e.name, e.message, e);
+        console.error('openSession:', e.name, e.message, e);
         this.sessionLoadError = true;
         this.view = 'session';
       } finally {
@@ -653,7 +642,9 @@ function alfApp() {
     async commitSessionAdd(scope) {
       if (!this.sessionAdd) return;
       const draft = this.sessionAdd;
-      if (draft.lockedScope) scope = draft.lockedScope;
+      // Session-only blocks (string sentinel id) can't host template/fork prescriptions
+      // because the block itself doesn't exist in the workout. Force session scope.
+      if (typeof draft.blockId === 'string') scope = 'session';
       const ex = await this.resolveExerciseByName(draft.exerciseQuery);
       if (!ex) { alert('Type or pick an exercise name.'); return; }
 
@@ -1124,6 +1115,37 @@ function alfApp() {
     async copySessionSummary() {
       await navigator.clipboard.writeText(this.buildSessionSummary());
       this.showFlash('Summary copied');
+    },
+
+    /**
+     * Open the user's mail client with the session summary as the body.
+     * Uses mailto: so it works on mobile and desktop without backend infra.
+     */
+    emailSessionSummary() {
+      const s = this.activeSession;
+      if (!s) return;
+      const date = (s.startedAt || '').slice(0, 10);
+      const wk = this.sessionWorkoutName(s) || 'session';
+      const day = s._dayName ? ' / ' + s._dayName : '';
+      const subject = `alf-gym ${date} — ${wk}${day}`;
+      const body = this.buildSessionSummary();
+      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    },
+
+    /**
+     * Return {done, total, pct} for the active session.
+     * done = set rows with the done checkbox checked; total = all set rows.
+     */
+    sessionProgress() {
+      const perfs = this.activeSessionPerformances || [];
+      let done = 0, total = 0;
+      for (const p of perfs) {
+        const sets = p._sets || [];
+        total += sets.length;
+        for (const st of sets) if (st.done) done++;
+      }
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      return { done, total, pct };
     },
 
     /** Quote a CSV cell if it contains comma, quote, or newline. */
@@ -1880,7 +1902,6 @@ function alfApp() {
     },
 
     async confirmImport() {
-      console.log('[import] confirmImport build=2026-05-14-b'); // bump on each fix to verify cache freshness
       if (!this.importPreview) return;
       if (!confirm('Replace ALL local data with this backup? Current state will be stashed for one-cycle undo.')) return;
       try {

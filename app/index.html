@@ -55,9 +55,15 @@
     .fab-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--text); color: var(--surface); border: none; font-size: 22px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; line-height: 1; }
     .fab-action { width: 40px; height: 40px; border-radius: 50%; background: var(--surface); color: var(--text); border: 1px solid var(--border); font-size: 16px; cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,.15); display: flex; align-items: center; justify-content: center; }
     .wb-sheet { position: fixed; bottom: 0; left: 0; right: 0; padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 16px); background: var(--surface); border-top: 1px solid var(--border); border-radius: var(--r-md) var(--r-md) 0 0; z-index: 92; box-shadow: 0 -4px 16px rgba(0,0,0,.1); }
+    /* Session progress bar */
+    .progress-bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+    .progress-bar .fill { height: 100%; background: var(--accent); transition: width 0.2s ease; }
+    .progress-meta { font-size: 11px; color: var(--text-3); margin-top: 3px; font-family: var(--mono); }
     @media (max-width: 500px) {
       .menubar { flex-wrap: wrap; align-items: flex-start; }
-      .menubar .row.tight { flex-wrap: wrap; width: 100%; }
+      .menubar > div:first-child { width: 100%; }
+      .menubar .row.tight { flex-wrap: wrap; width: 100%; justify-content: flex-start; gap: 6px; }
+      .menubar .row.tight button.tiny { min-height: 32px; padding: 4px 10px; }
     }
   </style>
 </head>
@@ -340,10 +346,22 @@
                   summary <span x-text="sessionSummaryOpen ? '▾' : '▸'"></span>
                 </button>
                 <button class="tiny" @click="exportSessionCsv()" title="download CSV (one row per set)">CSV</button>
+                <button class="tiny" @click="emailSessionSummary()" title="email summary via your mail client">email</button>
               </span>
             </template>
           </div>
         </div>
+
+        <!-- Session progress bar -->
+        <template x-if="sessionProgress().total > 0">
+          <div style="margin-bottom: 12px;">
+            <div class="progress-bar"><div class="fill" :style="'width: ' + sessionProgress().pct + '%'"></div></div>
+            <div class="progress-meta">
+              <span x-text="sessionProgress().done"></span>/<span x-text="sessionProgress().total"></span> sets
+              · <span x-text="sessionProgress().pct"></span>%
+            </div>
+          </div>
+        </template>
 
         <!-- In-place summary panel (completed sessions) -->
         <div x-show="activeSession.status === 'completed' && sessionSummaryOpen" class="ix-card" style="margin-bottom: 12px; background: var(--surface-2);">
@@ -779,10 +797,23 @@
               </div>
             </div>
             <div style="font-size: 12px; color: var(--text-2); margin: 10px 0 6px;">
-              Locked scope: <strong x-text="sessionAdd.lockedScope"></strong> (matches the block's scope)
+              <template x-if="typeof sessionAdd.blockId === 'string'">
+                <span>Block is session-only — exercise must be too.</span>
+              </template>
+              <template x-if="typeof sessionAdd.blockId === 'number'">
+                <span>Block in <strong x-text="sessionAdd.lockedScope"></strong>. Pick scope for this exercise:</span>
+              </template>
             </div>
             <div class="row tight" style="gap: 6px;">
-              <button class="tiny" @click="commitSessionAdd(sessionAdd.lockedScope)">add</button>
+              <button class="tiny" @click="commitSessionAdd('session')"
+                :style="sessionAdd.lockedScope === 'session' ? 'background: var(--accent-bg); color: var(--accent); font-weight: 500;' : ''">this session only</button>
+              <template x-if="typeof sessionAdd.blockId === 'number'">
+                <button class="tiny" @click="commitSessionAdd('template')"
+                  :style="sessionAdd.lockedScope === 'template' ? 'background: var(--accent-bg); color: var(--accent); font-weight: 500;' : ''">to template</button>
+              </template>
+              <template x-if="typeof sessionAdd.blockId === 'number'">
+                <button class="tiny" @click="commitSessionAdd('fork')" style="color: var(--danger);">fork</button>
+              </template>
             </div>
           </div>
         </template>
