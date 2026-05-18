@@ -1,0 +1,243 @@
+{
+  "name": "Shoulder PT",
+  "blocks": [
+    {
+      "order": 0,
+      "name": "Shoulder PT",
+      "description": "",
+      "prescriptions": [
+        {
+          "order": 0,
+          "name": "Serratus Wall Slide (band)",
+          "sets": 2,
+          "reps": "10",
+          "load": "",
+          "holdSec": null,
+          "sideScheme": "bilateral",
+          "cues": [],
+          "alt": "",
+          "refs": [],
+          "notes": "Band at wrists, forearms on wall pointing up, protract shoulder blades, slide arms up.",
+          "_unparsed": []
+        },
+        {
+          "order": 1,
+          "name": "Band Pull-Apart",
+          "sets": 3,
+          "reps": "20",
+          "load": ":20",
+          "holdSec": null,
+          "sideScheme": "bilateral",
+          "cues": [],
+          "alt": "",
+          "refs": [],
+          "notes": "",
+          "_unparsed": []
+        },
+        {
+          "order": 2,
+          "name": "Face Pull (cable)",
+          "sets": 3,
+          "reps": "15",
+          "load": "^15",
+          "holdSec": null,
+          "sideScheme": "bilateral",
+          "cues": [],
+          "alt": "",
+          "refs": [],
+          "notes": "",
+          "_unparsed": []
+        }
+      ]
+    },
+    {
+      "order": 1,
+      "name": "Shoulder Stability",
+      "description": "3 rounds. Same KB, same spot. 90s rest between rounds.",
+      "prescriptions": [
+        {
+          "order": 0,
+          "name": "Bottoms-Up KB Press",
+          "sets": 3,
+          "reps": "8",
+          "load": "20",
+          "holdSec": null,
+          "sideScheme": "bilateral",
+          "cues": [],
+          "alt": "",
+          "refs": [],
+          "notes": "",
+          "_unparsed": []
+        },
+        {
+          "order": 1,
+          "name": "Half-Kneeling KB Press",
+          "sets": 3,
+          "reps": "8",
+          "load": "20",
+          "holdSec": null,
+          "sideScheme": "unilateral-l-first",
+          "cues": [],
+          "alt": "Seated DB Press (when shoulder allows)",
+          "refs": [],
+          "notes": "",
+          "_unparsed": []
+        },
+        {
+          "order": 2,
+          "name": "Prone Y-T-W",
+          "sets": 3,
+          "reps": "5",
+          "load": "",
+          "holdSec": null,
+          "sideScheme": "unilateral-l-first",
+          "cues": [
+            "Pinch shoulder blades, hold 2s at top"
+          ],
+          "alt": "",
+          "refs": [],
+          "notes": "",
+          "_unparsed": []
+        },
+        {
+          "order": 3,
+          "name": "Bear crawl",
+          "sets": 3,
+          "reps": "10",
+          "load": "",
+          "holdSec": null,
+          "sideScheme": "bilateral",
+          "cues": [
+            "Neutral spine, hips level"
+          ],
+          "alt": "",
+          "refs": [
+            {
+              "label": "Bear crawl",
+              "url": "https://example.com/bearcrawl"
+            }
+          ],
+          "notes": "",
+          "_unparsed": []
+        },
+        {
+          "order": 4,
+          "name": "Glute Amnesia Drills",
+          "sets": 3,
+          "reps": "8",
+          "load": "",
+          "holdSec": null,
+          "sideScheme": "bilateral",
+          "cues": [],
+          "alt": "",
+          "refs": [],
+          "notes": "",
+          "_unparsed": []
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "name": "Posterior Chain",
+      "description": "",
+      "prescriptions": [
+        {
+          "order": 0,
+          "name": "Barbell RDL",
+          "sets": 3,
+          "reps": "5",
+          "load": "40",
+          "holdSec": null,
+          "sideScheme": "unilateral-l-first",
+          "cues": [
+            "Hinge at hips, soft knees, bar stays close"
+          ],
+          "alt": "",
+          "refs": [],
+          "notes": "",
+          "_unparsed": []
+        },
+        {
+          "order": 1,
+          "name": "Glute Amnesia Drills",
+          "sets": 3,
+          "reps": "8",
+          "load": "",
+          "holdSec": null,
+          "sideScheme": "bilateral",
+          "cues": [],
+          "alt": "",
+          "refs": [],
+          "notes": "",
+          "_unparsed": []
+        },
+        {
+          "order": 2,
+          "name": "B-stance RDL",
+          "sets": 2,
+          "reps": "8",
+          "load": "30",
+          "holdSec": null,
+          "sideScheme": "unilateral-l-first",
+          "cues": [],
+          "alt": "",
+          "refs": [],
+          "notes": "",
+          "_unparsed": []
+        },
+        {
+          "order": 3,
+          "name": "Eyes closed balance",
+          "sets": 3,
+          "reps": null,
+          "load": "30s",
+          "holdSec": null,
+          "sideScheme": "bilateral",
+          "cues": [],
+          "alt": "",
+          "refs": [],
+          "notes": "",
+          "_unparsed": []
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "name": "Core + Carry",
+      "description": "",
+      "prescriptions": [
+        {
+          "order": 0,
+          "name": "Paloff Press",
+          "sets": 3,
+          "reps": "10",
+          "load": "^12",
+          "holdSec": null,
+          "sideScheme": "unilateral-l-first",
+          "cues": [],
+          "alt": "",
+          "refs": [],
+          "notes": "",
+          "_unparsed": []
+        },
+        {
+          "order": 1,
+          "name": "Farmer Carry (DB)",
+          "sets": 3,
+          "reps": null,
+          "load": ":20",
+          "holdSec": 40,
+          "sideScheme": "unilateral-l-first",
+          "cues": [
+            "Shoulders packed, chin tucked"
+          ],
+          "alt": "",
+          "refs": [],
+          "notes": "",
+          "_unparsed": []
+        }
+      ],
+      "subLabel": "Notes"
+    }
+  ]
+}

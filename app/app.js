@@ -52,6 +52,14 @@ function alfApp() {
     importError: '',
     hasUndo: !!localStorage.getItem('alfgym.lastBackup'),
 
+    // Markdown import
+    mdImportText: '',
+    mdImportPreview: null,   // { name, blocks } AST from parser
+    mdImportError: '',
+    mdImportTargetDayId: null,   // when set, commit appends blocks to this Day
+    mdImportTargetDay: null,     // resolved day record (for header text)
+    mdImportTargetWorkout: null, // resolved workout record (for header text)
+
     // Partial sessions (Phase B): inline add/remove exercise drafts.
     sessionAdd: null,       // { blockId, exerciseQuery, sets, reps, load, sideScheme, holdSec, notable, notes, lockedScope? }
     sessionRemove: null,    // { perfId }
@@ -110,6 +118,25 @@ function alfApp() {
       if (h === '#/wizard') { this.openWizard(); return; }
       if (h === '#/wishlist') { await this.loadWishlist(); this.view = 'wishlist'; return; }
       if (h === '#/sessions') { await this.loadSessions(); await this.loadWorkouts(); this.view = 'sessions'; return; }
+      if (h === '#/import-md') {
+        this.mdImportTargetDayId = null;
+        this.mdImportTargetDay = null;
+        this.mdImportTargetWorkout = null;
+        this.view = 'import-md';
+        return;
+      }
+      const mdM = h.match(/^#\/import-md\/d\/(\d+)$/);
+      if (mdM) {
+        const dayId = parseInt(mdM[1], 10);
+        const day = await window.alfdb.days.get(dayId);
+        if (!day) { this.gotoHash('#/'); return; }
+        const wo = await window.alfdb.workouts.get(day.workoutId);
+        this.mdImportTargetDayId = dayId;
+        this.mdImportTargetDay = day;
+        this.mdImportTargetWorkout = wo;
+        this.view = 'import-md';
+        return;
+      }
       if (m && m[1]) { await this.openSession(parseInt(m[1], 10)); return; }
       if (m && m[2]) {
         const workoutId = parseInt(m[2], 10);
@@ -232,7 +259,7 @@ function alfApp() {
         prescriptions.sort((a, b) => a.order - b.order);
         for (const p of prescriptions) {
           const ex = await window.alfdb.exercises.get(p.exerciseId);
-          blockPrescriptions.push({ block: b, prescription: p, exerciseName: ex ? ex.name : '?' });
+          blockPrescriptions.push({ block: b, prescription: p, exerciseName: ex ? ex.name : (p.name || '?') });
         }
       }
 
@@ -1573,7 +1600,7 @@ function alfApp() {
       const fields = { ...p, notable: !!p.notable, notes: p.notes || '', loadKind: parsed.kind, loadValue: parsed.value, cues: ex ? (ex.cues || '') : '' };
       this.editing = {
         id: p.id,
-        exerciseQuery: this.exerciseName(p.exerciseId),
+        exerciseQuery: p.exerciseId ? this.exerciseName(p.exerciseId) : (p.name || ''),
         fields,
         token: this.tokenFromFields(fields)
       };
@@ -1956,7 +1983,153 @@ function alfApp() {
       this.hasUndo = false;
       this.showFlash('Reverted to pre-restore state');
       this.gotoHash('#/');
-    }
+    },
+
+    // ----- Markdown import -----
+
+    stageMdImport() {
+      this.mdImportError = '';
+      this.mdImportPreview = null;
+      const text = (this.mdImportText || '').trim();
+      if (!text) { this.mdImportError = 'Paste a workout .md file or pick a file.'; return; }
+      if (!window.alfMdParser) { this.mdImportError = 'Parser not loaded.'; return; }
+      try {
+        const ast = window.alfMdParser.parse(text);
+        if (!ast.name && ast.blocks.length === 0) {
+          this.mdImportError = 'Nothing found — check that the file has # and ## headings.';
+          return;
+        }
+        this.mdImportPreview = ast;
+      } catch (e) {
+        this.mdImportError = 'Parse failed: ' + (e.message || String(e));
+      }
+    },
+
+    async stageMdImportFromFile(ev) {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+      this.mdImportText = await file.text();
+      ev.target.value = '';
+      this.stageMdImport();
+    },
+
+    async commitMdImport() {
+      if (!this.mdImportPreview) return;
+      // Deep-clone to strip Alpine reactive proxies (IDB structured-clone rejects them).
+      const ast = JSON.parse(JSON.stringify(this.mdImportPreview));
+      const db = window.alfdb;
+      const targetDayId = this.mdImportTargetDayId;
+      try {
+        let returnHash;
+        let totalBlocks = ast.blocks.length;
+        let totalEx = ast.blocks.reduce((n, b) => n + b.prescriptions.length, 0);
+
+        if (targetDayId) {
+          // Append blocks to existing Day. Compute next block order from existing rows.
+          await db.transaction('rw', [db.blocks, db.prescriptions], async () => {
+            const existing = await db.blocks.where({ dayId: targetDayId }).toArray();
+            let nextOrder = existing.reduce((m, b) => Math.max(m, b.order || 0), -1) + 1;
+            for (const b of ast.blocks) {
+              const blockId = await db.blocks.add({
+                dayId: targetDayId,
+                name: b.name,
+                type: 'straight',
+                rounds: 1,
+                restBetweenRoundsSec: 0,
+                order: nextOrder++,
+                description: b.description || '',
+                optional: false,
+              });
+              for (const p of b.prescriptions) {
+                await db.prescriptions.add({
+                  blockId,
+                  exerciseId: null,
+                  name: p.name,
+                  sets: p.sets !== null ? p.sets : 1,
+                  reps: p.reps || null,
+                  load: p.load || '',
+                  holdSec: p.holdSec || null,
+                  sideScheme: p.sideScheme || 'bilateral',
+                  notable: false,
+                  cues: p.cues || [],
+                  alt: p.alt || '',
+                  refs: p.refs || [],
+                  notes: p.notes || '',
+                  order: p.order,
+                });
+              }
+            }
+          });
+          const day = this.mdImportTargetDay;
+          returnHash = '#/w/' + day.workoutId + '/d/' + targetDayId;
+        } else {
+          // Original flow: create new draft Workout + Day A + Blocks.
+          const workoutName = (ast.name || 'Imported Workout').trim();
+          let newWorkoutId;
+          await db.transaction('rw', [db.workouts, db.days, db.blocks, db.prescriptions], async () => {
+            newWorkoutId = await db.workouts.add({
+              name: workoutName,
+              parentId: null,
+              status: 'draft',
+              isCurrent: false,
+              createdAt: new Date().toISOString(),
+            });
+            const dayId = await db.days.add({
+              workoutId: newWorkoutId,
+              groupKey: 'A',
+              name: '',
+              isAlt: false,
+              order: 0,
+            });
+            let blockOrder = 0;
+            for (const b of ast.blocks) {
+              const blockId = await db.blocks.add({
+                dayId,
+                name: b.name,
+                type: 'straight',
+                rounds: 1,
+                restBetweenRoundsSec: 0,
+                order: b.order !== undefined ? b.order : blockOrder,
+                description: b.description || '',
+                optional: false,
+              });
+              blockOrder++;
+              for (const p of b.prescriptions) {
+                await db.prescriptions.add({
+                  blockId,
+                  exerciseId: null,
+                  name: p.name,
+                  sets: p.sets !== null ? p.sets : 1,
+                  reps: p.reps || null,
+                  load: p.load || '',
+                  holdSec: p.holdSec || null,
+                  sideScheme: p.sideScheme || 'bilateral',
+                  notable: false,
+                  cues: p.cues || [],
+                  alt: p.alt || '',
+                  refs: p.refs || [],
+                  notes: p.notes || '',
+                  order: p.order,
+                });
+              }
+            }
+          });
+          returnHash = '#/w/' + newWorkoutId;
+        }
+
+        this.mdImportText = '';
+        this.mdImportPreview = null;
+        this.mdImportTargetDayId = null;
+        this.mdImportTargetDay = null;
+        this.mdImportTargetWorkout = null;
+        this.showFlash('Imported: ' + totalBlocks + ' blocks, ' + totalEx + ' exercises');
+        await this.loadWorkouts();
+        this.gotoHash(returnHash);
+      } catch (e) {
+        console.error('commitMdImport failed:', e);
+        this.mdImportError = 'Import failed: ' + (e.message || e.name || String(e));
+      }
+    },
   };
 }
 

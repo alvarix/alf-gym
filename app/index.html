@@ -248,6 +248,116 @@
     </div>
   </div>
 
+  <!-- Markdown import -->
+  <div x-show="view === 'import-md'" x-cloak>
+    <div class="menubar">
+      <div>
+        <div class="title">
+          <template x-if="mdImportTargetDayId">
+            <span>Import blocks into Day</span>
+          </template>
+          <template x-if="!mdImportTargetDayId">
+            <span>Import workout (.md)</span>
+          </template>
+        </div>
+        <div class="crumbs">
+          <template x-if="mdImportTargetDayId && mdImportTargetWorkout">
+            <span>
+              <a @click="gotoHash('#/')">workouts</a><span class="sep">/</span>
+              <a @click="gotoHash('#/w/' + mdImportTargetWorkout.id)" x-text="mdImportTargetWorkout.name"></a><span class="sep">/</span>
+              <a @click="gotoHash('#/w/' + mdImportTargetWorkout.id + '/d/' + mdImportTargetDayId)" x-text="(mdImportTargetDay && mdImportTargetDay.name) || 'Day'"></a><span class="sep">/</span>
+              import md
+            </span>
+          </template>
+          <template x-if="!mdImportTargetDayId">
+            <span><a @click="gotoHash('#/')">workouts</a><span class="sep">/</span>import md</span>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 8px;">
+      <input type="file" accept=".md,.markdown,text/markdown,text/plain" @change="stageMdImportFromFile($event)" style="font-size: 12px;" />
+    </div>
+    <textarea
+      x-model="mdImportText"
+      @input="mdImportPreview = null"
+      placeholder="…or paste a workout .md file here"
+      style="width: 100%; min-height: 120px; font-family: var(--mono); font-size: 11px; padding: 8px; box-sizing: border-box;"
+    ></textarea>
+
+    <div class="row tight" style="margin-top: 8px;">
+      <button class="tiny" @click="stageMdImport()">parse</button>
+      <template x-if="mdImportPreview && mdImportTargetDayId">
+        <button class="tiny new-btn" @click="commitMdImport()">add blocks to day</button>
+      </template>
+      <template x-if="mdImportPreview && !mdImportTargetDayId">
+        <button class="tiny new-btn" @click="commitMdImport()">create draft workout</button>
+      </template>
+    </div>
+
+    <template x-if="mdImportError">
+      <div style="color: var(--danger); font-size: 12px; margin-top: 8px;" x-text="mdImportError"></div>
+    </template>
+
+    <!-- Preview tree -->
+    <template x-if="mdImportPreview">
+      <div style="margin-top: 16px;">
+        <template x-if="!mdImportTargetDayId">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+            <label style="font-size: 12px; color: var(--text-2); flex-shrink: 0;">Workout name</label>
+            <input
+              x-model="mdImportPreview.name"
+              style="flex: 1; font-size: 13px; font-weight: 500;"
+              placeholder="(untitled)"
+            />
+          </div>
+        </template>
+        <template x-if="mdImportTargetDayId">
+          <div style="font-size: 12px; color: var(--text-2); margin-bottom: 10px;">
+            <span x-text="mdImportPreview.blocks.length"></span> block<span x-show="mdImportPreview.blocks.length !== 1">s</span>
+            will be appended to <strong x-text="(mdImportTargetDay && mdImportTargetDay.name) || 'this day'"></strong>.
+            (Workout name from the file is ignored.)
+          </div>
+        </template>
+
+        <template x-for="(block, bi) in mdImportPreview.blocks" :key="bi">
+          <div class="ix-card" style="margin-bottom: 6px;">
+            <div class="title" x-text="(block.order !== undefined ? block.order + '. ' : '') + block.name"></div>
+            <template x-if="block.description">
+              <div class="meta" x-text="block.description"></div>
+            </template>
+            <template x-for="(p, pi) in block.prescriptions" :key="pi">
+              <div style="padding: 4px 0 0 8px; border-left: 2px solid var(--border); margin-top: 4px;">
+                <div style="font-size: 13px;">
+                  <span x-text="p.name"></span>
+                  <template x-if="p.load">
+                    <span class="pill-tag" style="background: var(--surface-2); color: var(--text-2);" x-text="p.load + '!'"></span>
+                  </template>
+                  <template x-if="p.reps">
+                    <span class="pill-tag" style="background: var(--surface-2); color: var(--text-2);" x-text="p.reps + (p.sets ? '-' + p.sets : '')"></span>
+                  </template>
+                  <template x-if="p.sideScheme !== 'bilateral'">
+                    <span class="pill-tag" style="background: var(--surface-2); color: var(--text-2);">per side</span>
+                  </template>
+                </div>
+                <template x-if="p.notes">
+                  <div style="font-size: 11px; color: var(--text-2); margin-top: 2px;" x-text="p.notes"></div>
+                </template>
+                <template x-if="p.alt">
+                  <div style="font-size: 11px; color: var(--text-3);" x-text="'Alt: ' + p.alt"></div>
+                </template>
+                <template x-if="p.cues && p.cues.length">
+                  <div style="font-size: 11px; color: var(--text-3);" x-text="'Cue: ' + p.cues.join(' · ')"></div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+
   <!-- Sessions list -->
   <div x-show="view === 'sessions'">
     <div class="row spread" style="margin-bottom: 8px;">
@@ -1039,6 +1149,7 @@
       <h2 style="margin: 0;" x-text="activeDay() ? activeDay().name : ''"></h2>
       <div class="row tight">
         <button @click="openSessionStartPicker(activeDayId)" title="start a session for this day" style="background: var(--accent-bg); color: var(--accent); font-weight: 500;">▶ start session</button>
+        <button class="tiny" @click="gotoHash('#/import-md/d/' + activeDayId)" title="import blocks from markdown into this day">↧ import md</button>
         <button class="new-btn" @click="openDraftBlock()" x-show="!draftBlock">+ block</button>
       </div>
     </div>
@@ -1164,7 +1275,7 @@
           <div style="flex: 1; min-width: 0;">
             <div class="title">
               <span class="mono dim" x-text="(blocks.findIndex(b => b.id === activeBlockId) + 1) + '.' + (i+1)"></span>
-              <span x-text="exerciseName(p.exerciseId)"></span>
+              <span x-text="p.exerciseId ? exerciseName(p.exerciseId) : (p.name || '?')"></span>
               <template x-if="p.notable && !syntax"><span class="pill-tag notable">notable</span></template>
             </div>
             <div class="meta mono" x-text="formatPrescription(p)"></div>
@@ -1385,6 +1496,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dexie/3.2.4/dexie.min.js"></script>
 <script src="db.js"></script>
+<script src="js/import/parser.js"></script>
 <script src="app.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.0/cdn.min.js"></script>
 <style>[x-cloak] { display: none !important; }</style>

@@ -2,6 +2,18 @@
 
 All notable changes to alf-gym are recorded here. Newest entries on top.
 
+## 2026-05-18 r4.11
+
+### Added
+- **Markdown import** with two entry points:
+  - **Day-scoped (primary):** `↧ import md` button on the Day view → `#/import-md/d/<dayId>` → appends parsed blocks to that existing Day. Workout name from the file is ignored.
+  - **New-workout:** `#/import-md` (direct URL) → creates a new draft Workout with a Day A and the parsed blocks. No UI entry point on the workouts list in r4.11.
+- **`app/js/import/parser.js`**: standalone line-classifier + AST emitter. Handles `#`/`##`/`###` headings, prescription bullets (checkbox state ignored), indented `Alt:`/`Cue:` fields, inline URLs → `refs[]`, same-line and indented notes, and trailing notation tokens using the v4 `!`-terminated load format.
+- **Notation v4**: `!` is now a mandatory load terminator on every load token. `:` before `!` = pair of implements (`:20!` = two 20lb DBs); `:` after `!` = per-side reps (`40!:5-3`). `;` removed. "Notable" is no longer a typed token — it is a UI-derived signal from history. See `docs/4-notation.md`.
+- **`docs/import-massage.md`**: 11-step recipe table for normalizing legacy vault files before import.
+- Parser unit tests (31 cases) runnable with `pnpm test` / `node --test tests/import/parser.spec.js`.
+- Playwright smoke test in `tests/e2e/import-md.spec.js`.
+
 ## 2026-05-17 r4.10
 
 ### Added

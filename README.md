@@ -8,9 +8,18 @@ To import your session data locally:
 2. Open the backup panel (look for a backup/restore section — probably in settings or a gear icon)
 3. Use **"pick a file"** and select `/Users/alvarsirlin/Sites/apps/alf-gym/data/alfgym-backup-2026-05-14T18-30-13.json
 
+## Import workout from Markdown
+
+Two entry points:
+
+- **Primary:** open a Day in any existing workout and click `↧ import md`. The parsed blocks from the `.md` file are appended to that Day. The workout name in the file is ignored.
+- **Secondary:** navigate directly to `#/import-md` to create a brand new draft Workout (with a Day A) from the `.md` file.
+
+No session data is created. See `docs/import-massage.md` for the find/replace recipes to normalize a raw vault file before import.
+
 ## Status
 
-r4.8 — session capture UI overhaul: prefill from last session as input placeholders (prescribed as fallback), exercise cues drawer, day name shown on session list and header, load/reps column order swapped, side column removed, set rows locked until `edit` on completed sessions. See CHANGELOG.
+r4.11 — markdown import (`#/import-md`), notation v4 (`!` mandatory load terminator): prefill from last session as input placeholders (prescribed as fallback), exercise cues drawer, day name shown on session list and header, load/reps column order swapped, side column removed, set rows locked until `edit` on completed sessions. See CHANGELOG.
 
 ## Repo layout
 
@@ -115,6 +124,27 @@ Clipboard now holds a restore-compatible backup. Save it as `alfgym-backup-YYYY-
 - **Clearing site data wipes everything.** No cloud copy exists until Supabase sync ships.
 - **Private/Incognito windows** isolate IndexedDB — sessions logged there die with the tab.
 - The exported JSON is **not redacted**. Notes fields may contain whatever you typed (injuries, pain marks). Treat it as personal data.
+
+### Known bug: Dexie indexes after `bulkPut` (the r4.7 bug)
+
+When a backup is restored, rows arrive in IndexedDB via `Dexie.bulkPut()`. After that, calls like `db.performances.where({ sessionId }).toArray()` can return an empty array **even though the rows are present** — Dexie's secondary indexes don't appear to update reliably for those rows. The data is fine; the query is the problem.
+
+This caused r4.7's "imported sessions show no exercises" incident. The fix on the three load-path callsites was to replace `.where()` with a full-scan + in-memory filter:
+
+```js
+// Don't do this on tables that may contain imported rows:
+const perfs = await db.performances.where({ sessionId }).toArray();
+
+// Do this:
+const all = await db.performances.toArray();
+const perfs = all.filter(p => p.sessionId === sessionId);
+```
+
+The full postmortem lives in [`docs/22-postmortem-import-load.md`](docs/22-postmortem-import-load.md). Three callsites were converted in r4.7; the remaining ~20 still use `.where()` and are exposed to the same failure mode.
+
+**If you see "imported data looks empty":** the data is almost certainly still there. Open DevTools and run `await window.alfdb.<table>.toArray()` to confirm presence. The fix is to convert the failing read path.
+
+**Follow-up plan:** [`docs/26--llm--dexie-diagnostics.md`](docs/26--llm--dexie-diagnostics.md) (1–2h mechanical sweep).
 
 UI additions to make this easier (per-session JSON/Markdown, share sheet, CSV) and the planned migration to PocketBase as canonical storage are tracked in [`docs/export-pocketbase-plan.md`](docs/export-pocketbase-plan.md). Other in-flight plans are indexed in [`docs/plans.md`](docs/plans.md).
 
